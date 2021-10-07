@@ -1,14 +1,73 @@
 # -*- coding: utf-8 -*-
 
 # This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License version 3 as
+# it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
 
 from genericpath import exists
 import sys
 import os.path
+import unicodedata
 
 WINDOWS = (os.name == "nt")
+
+
+class EAWCache(dict):
+
+    def __missing__(self, key):
+        width = self[key] = 2 if unicodedata.east_asian_width(key) in "WF" else 1
+        return width
+
+
+def shorten_string(txt : str, limit : int, sep = "…") -> str:
+    """Limit width of 'txt'; assume all characters have a width of 1"""
+
+    if len(txt) <= limit:
+        return txt
+
+    limit -= len(sep)
+    return txt[:limit // 2] + sep + txt[-((limit+1) // 2):]
+
+
+
+def shorten_string_eaw(txt, limit, sep="…", cache=EAWCache()):
+    """Limit width of 'txt'; check for east-asian characters with width > 1"""
+    char_widths = [cache[c] for c in txt]
+    text_width = sum(char_widths)
+
+    if text_width <= limit:
+        # no shortening required
+        return txt
+
+    limit -= len(sep)
+    if text_width == len(txt):
+        # all characters have a width of 1
+        return txt[:limit // 2] + sep + txt[-((limit+1) // 2):]
+
+    # wide characters
+    left = 0
+    lwidth = limit // 2
+    while True:
+        lwidth -= char_widths[left]
+        if lwidth < 0:
+            break
+        left += 1
+
+    right = -1
+    rwidth = (limit+1) // 2 + (lwidth + char_widths[left])
+    while True:
+        rwidth -= char_widths[right]
+        if rwidth < 0:
+            break
+        right -= 1
+
+    return txt[:left] + sep + txt[right+1:]
+
+
+def identity(x):
+    """Returns its argument"""
+    return x
+
 
 def expand_path(path):
     """Expand environment variables and tildes (~)"""
