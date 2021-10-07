@@ -4,8 +4,21 @@
 # it under the terms of the GNU General Public License version 3 as
 # published by the Free Software Foundation.
 
+from genericpath import exists
 import sys
 import os.path
+
+WINDOWS = (os.name == "nt")
+
+def expand_path(path):
+    """Expand environment variables and tildes (~)"""
+    if not path:
+        return path
+
+    if not isinstance(path, str):
+        path = os.path.join(*path)
+
+    return os.path.expandvars(os.path.expanduser(path))
 
 
 def list_dirs(path : str) -> list:
@@ -40,7 +53,7 @@ def create_directory(path : str) -> bool:
         False if path was not created
     """
     try:
-        os.makedirs(path)
+        os.makedirs(expand_path(path), exist_ok=True)
     except OSError:
         pass
     return os.path.isdir(path)
