@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License version 3 as
+# it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
 
 
@@ -53,7 +53,7 @@ setup(
     maintainer="Minnowo",
     maintainer_email="",
     include_package_data=True,
-    license="GPLv3",
+    license="GPLv2",
     python_requires=">=3.4",
     install_requires=REQUIREMENTS,
     zip_safe=False,
