@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License version 3 as
+# it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
 
 try:
@@ -10,16 +10,20 @@ except ImportError:
     from urlparse import urlparse
 
 import logging
-from . import downloader
 
+from . import extractor
+from . import downloader
+from . import exceptions
 
 class Job():
 
     def __init__(self, extr, parent=None) -> None:
+        
         if isinstance(extr, str):
             extr = extractor.find(extr)
+
         if not extr:
-            raise exception.NoExtractorError()
+            raise exceptions.NoExtractorError()
 
         self.extractor = extr
         self.pathfmt = None
