@@ -11,7 +11,7 @@ import sys
 import shutil
 import logging
 import unicodedata
-from . import config, util, formatter
+from . import config, util
 
 
 # --------------------------------------------------------------------
@@ -86,95 +86,95 @@ class KwdictProxy():
         return pathfmt.kwdict.get(name) if pathfmt else None
 
 
-class Formatter(logging.Formatter):
-    """Custom formatter that supports different formats per loglevel"""
+# class Formatter(logging.Formatter):
+#     """Custom formatter that supports different formats per loglevel"""
 
-    def __init__(self, fmt, datefmt):
-        if isinstance(fmt, dict):
-            for key in ("debug", "info", "warning", "error"):
-                value = fmt[key] if key in fmt else LOG_FORMAT
-                fmt[key] = (formatter.parse(value).format_map,
-                            "{asctime" in value)
-        else:
-            if fmt == LOG_FORMAT:
-                fmt = (fmt.format_map, False)
-            else:
-                fmt = (formatter.parse(fmt).format_map, "{asctime" in fmt)
-            fmt = {"debug": fmt, "info": fmt, "warning": fmt, "error": fmt}
+#     def __init__(self, fmt, datefmt):
+#         if isinstance(fmt, dict):
+#             for key in ("debug", "info", "warning", "error"):
+#                 value = fmt[key] if key in fmt else LOG_FORMAT
+#                 fmt[key] = (formatter.parse(value).format_map,
+#                             "{asctime" in value)
+#         else:
+#             if fmt == LOG_FORMAT:
+#                 fmt = (fmt.format_map, False)
+#             else:
+#                 fmt = (formatter.parse(fmt).format_map, "{asctime" in fmt)
+#             fmt = {"debug": fmt, "info": fmt, "warning": fmt, "error": fmt}
 
-        self.formats = fmt
-        self.datefmt = datefmt
+#         self.formats = fmt
+#         self.datefmt = datefmt
 
-    def format(self, record):
-        record.message = record.getMessage()
-        fmt, asctime = self.formats[record.levelname]
-        if asctime:
-            record.asctime = self.formatTime(record, self.datefmt)
-        msg = fmt(record.__dict__)
-        if record.exc_info and not record.exc_text:
-            record.exc_text = self.formatException(record.exc_info)
-        if record.exc_text:
-            msg = msg + "\n" + record.exc_text
-        if record.stack_info:
-            msg = msg + "\n" + record.stack_info
-        return msg
-
-
-def initialize_logging(loglevel):
-    """Setup basic logging functionality before configfiles have been loaded"""
-
-    # convert levelnames to lowercase
-    for level in (10, 20, 30, 40, 50):
-        name = logging.getLevelName(level)
-        logging.addLevelName(level, name.lower())
-
-    # register custom Logging class
-    logging.Logger.manager.setLoggerClass(Logger)
-
-    # setup basic logging to stderr
-    formatter = Formatter(LOG_FORMAT, LOG_FORMAT_DATE)
-    handler = logging.StreamHandler()
-    handler.setFormatter(formatter)
-    handler.setLevel(loglevel)
-    root = logging.getLogger()
-    root.setLevel(logging.NOTSET)
-    root.addHandler(handler)
-
-    return logging.getLogger("hentai-dl")
+#     def format(self, record):
+#         record.message = record.getMessage()
+#         fmt, asctime = self.formats[record.levelname]
+#         if asctime:
+#             record.asctime = self.formatTime(record, self.datefmt)
+#         msg = fmt(record.__dict__)
+#         if record.exc_info and not record.exc_text:
+#             record.exc_text = self.formatException(record.exc_info)
+#         if record.exc_text:
+#             msg = msg + "\n" + record.exc_text
+#         if record.stack_info:
+#             msg = msg + "\n" + record.stack_info
+#         return msg
 
 
-def configure_logging(loglevel):
-    root = logging.getLogger()
-    minlevel = loglevel
+# def initialize_logging(loglevel):
+#     """Setup basic logging functionality before configfiles have been loaded"""
 
-    # stream logging handler
-    handler = root.handlers[0]
-    opts = config.interpolate(("output",), "log")
+#     # convert levelnames to lowercase
+#     for level in (10, 20, 30, 40, 50):
+#         name = logging.getLevelName(level)
+#         logging.addLevelName(level, name.lower())
 
-    if opts:
-        if isinstance(opts, str):
-            opts = {"format": opts}
+#     # register custom Logging class
+#     logging.Logger.manager.setLoggerClass(Logger)
 
-        if handler.level == LOG_LEVEL and "level" in opts:
-            handler.setLevel(opts["level"])
+#     # setup basic logging to stderr
+#     formatter = Formatter(LOG_FORMAT, LOG_FORMAT_DATE)
+#     handler = logging.StreamHandler()
+#     handler.setFormatter(formatter)
+#     handler.setLevel(loglevel)
+#     root = logging.getLogger()
+#     root.setLevel(logging.NOTSET)
+#     root.addHandler(handler)
 
-        if "format" in opts or "format-date" in opts:
-            handler.setFormatter(Formatter(
-                opts.get("format", LOG_FORMAT),
-                opts.get("format-date", LOG_FORMAT_DATE),
-            ))
+#     return logging.getLogger("hentai-dl")
 
-        if minlevel > handler.level:
-            minlevel = handler.level
 
-    # file logging handler
-    handler = setup_logging_handler("logfile", lvl=loglevel)
-    if handler:
-        root.addHandler(handler)
-        if minlevel > handler.level:
-            minlevel = handler.level
+# def configure_logging(loglevel):
+#     root = logging.getLogger()
+#     minlevel = loglevel
 
-    root.setLevel(minlevel)
+#     # stream logging handler
+#     handler = root.handlers[0]
+#     opts = config.interpolate(("output",), "log")
+
+#     if opts:
+#         if isinstance(opts, str):
+#             opts = {"format": opts}
+
+#         if handler.level == LOG_LEVEL and "level" in opts:
+#             handler.setLevel(opts["level"])
+
+#         if "format" in opts or "format-date" in opts:
+#             handler.setFormatter(Formatter(
+#                 opts.get("format", LOG_FORMAT),
+#                 opts.get("format-date", LOG_FORMAT_DATE),
+#             ))
+
+#         if minlevel > handler.level:
+#             minlevel = handler.level
+
+#     # file logging handler
+#     handler = setup_logging_handler("logfile", lvl=loglevel)
+#     if handler:
+#         root.addHandler(handler)
+#         if minlevel > handler.level:
+#             minlevel = handler.level
+
+#     root.setLevel(minlevel)
 
 
 def setup_logging_handler(key, fmt=LOG_FORMAT, lvl=LOG_LEVEL):
@@ -205,10 +205,10 @@ def setup_logging_handler(key, fmt=LOG_FORMAT, lvl=LOG_LEVEL):
         return None
 
     handler.setLevel(opts.get("level", lvl))
-    handler.setFormatter(Formatter(
-        opts.get("format", fmt),
-        opts.get("format-date", LOG_FORMAT_DATE),
-    ))
+    # handler.setFormatter(Formatter(
+    #     opts.get("format", fmt),
+    #     opts.get("format-date", LOG_FORMAT_DATE),
+    # ))
     return handler
 
 

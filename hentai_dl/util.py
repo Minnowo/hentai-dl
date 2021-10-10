@@ -10,6 +10,7 @@ import os.path
 import unicodedata
 
 WINDOWS = (os.name == "nt")
+SENTINEL = object()
 
 
 class EAWCache(dict):

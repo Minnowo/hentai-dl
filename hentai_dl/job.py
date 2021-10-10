@@ -14,6 +14,7 @@ import logging
 from . import extractor
 from . import downloader
 from . import exceptions
+from . import output
 
 class Job():
 
@@ -61,7 +62,11 @@ class Job():
     
     def get_logger(self, name):
         """Gets a logger with the given name"""
-        return logging.getLogger(name)
+        return self._wrap_logger(logging.getLogger(name))
+
+
+    def _wrap_logger(self, logger):
+        return output.LoggerAdapter(logger, self._logger_extra)
 
 
     def write_unsupported_url(self, url):
@@ -79,6 +84,8 @@ class DownloaderJob(Job):
         self.logger = self.get_logger("download")
         self.downloaders = {}
         self.outpur_directory = ""
+        self.out = output.select("terminal")
+
 
 
     def get_file_name(self):

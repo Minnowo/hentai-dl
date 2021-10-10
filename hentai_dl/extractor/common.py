@@ -14,8 +14,8 @@ import datetime
 import requests
 import threading
 from requests.adapters import HTTPAdapter
-# from .message import Message
-from .. import config, text, util, exception
+from .message import Message
+from .. import config, text, util, exceptions
 from ..util import WINDOWS
 
 class Extractor():
@@ -54,14 +54,14 @@ class Extractor():
         self._cfgpath = ("extractor", self.category, self.subcategory)
         self._parentdir = ""
 
-        self._write_pages = self.config("write-pages", False)
-        self._retries = self.config("retries", 4)
-        self._timeout = self.config("timeout", 30)
-        self._verify = self.config("verify", True)
-        self._interval = util.build_duration_func(
-            self.config("sleep-request", self.request_interval),
-            self.request_interval_min,
-        )
+        self._write_pages = False # self.config("write-pages", False)
+        self._retries = 4 # self.config("retries", 4)
+        self._timeout = 30 # self.config("timeout", 30)
+        self._verify = True # self.config("verify", True)
+        # self._interval = util.build_duration_func(
+        #     self.config("sleep-request", self.request_interval),
+        #     self.request_interval_min,
+        # )
 
         if self._retries < 0:
             self._retries = float("inf")
@@ -141,7 +141,7 @@ class Extractor():
                 msg = exc
 
             except (requests.exceptions.RequestException) as exc:
-                raise exception.HttpError(exc)
+                raise exceptions.HttpError(exc)
 
             else:
                 code = response.status_code
@@ -157,7 +157,7 @@ class Extractor():
                     return response
 
                 if notfound and code == 404:
-                    raise exception.NotFoundError(notfound)
+                    raise exceptions.NotFoundError(notfound)
 
                 msg = "'{} {}' for '{}'".format(code, response.reason, url)
                 server = response.headers.get("Server")
@@ -185,7 +185,7 @@ class Extractor():
             time.sleep(max(tries, self.request_interval))
             tries += 1
 
-        raise exception.HttpError(msg, response)
+        raise exceptions.HttpError(msg, response)
 
 
     def wait(self, *, seconds=None, until=None, adjust=1.0, reason="rate limit reset"):

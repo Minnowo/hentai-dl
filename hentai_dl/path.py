@@ -8,10 +8,12 @@
 """Filesystem path handling"""
 
 import os.path
-import re
 import shutil
 
-from . import util, formatter, exception
+from re import compile
+from os import stat
+
+from . import util
 from .util import WINDOWS
 
 class PathFormat:
@@ -36,17 +38,19 @@ class PathFormat:
         "windows" : ". "
     }
 
-    def __init__(self, directory = "", filename = "", extension = "", replace = "_") -> None:
+    def __init__(self, directory = "", filename = "", extension = "", *, replace = "_", use_temp_path = True) -> None:
         
         self.directory = ""
         self.filename = ""
         self.extension = ""
         self.path = ""
         self.temp_path = ""
+        self.finalized = False
+        self.use_temp_path = use_temp_path
         self.replace = replace
 
         # the regex function that will replace characters
-        self._replace = re.compile(f"[{self.RESTRICT_MAP['auto']}]").sub
+        self._replace = compile(f"[{self.RESTRICT_MAP['auto']}]").sub
 
         self.set_directory(directory)
         self.set_filename(filename)
@@ -59,7 +63,10 @@ class PathFormat:
             return path
 
         strip = self.STRIP_MAP["auto"]
-        path = path.replace(os.altsep, os.sep)
+
+        # altsep is None on unix, need to check
+        if os.altsep and os.altsep in path:
+            path = path.replace(os.altsep, os.sep)
 
         # remove empty strings from the split
         spl = list(filter(None, path.split(os.sep)))
@@ -103,7 +110,11 @@ class PathFormat:
 
         self._build_directory()
         self.path = os.path.join(self.directory, f"{self.filename}.{self.extension}")
-        self.temp_path = self.path + ".part"
+
+        if self.use_temp_path:
+            self.temp_path = self.path + ".part"
+        else:
+            self.temp_path = self.path
 
 
     def set_filename(self, name : str, update_extension = False, *, build_path = True):
@@ -170,8 +181,38 @@ class PathFormat:
             self._build_directory()
     
 
+    def open(self, mode="wb"):
+        """Open file and return a corresponding file object"""
+
+        if self.use_temp_path:
+            return open(self.temp_path, mode)
+        return open(self.path, mode)
+
+    def exists(self) -> bool:
+        """Return True if the file exists on disk"""
+
+        if self.finalized:
+            return self.extension and os.path.exists(self.path)
+        
+        if self.temp_path:
+            return self.extension and os.path.exists(self.temp_path)
+        
+        return False
+
+
+    def part_size(self):
+        """Return size of .part file"""
+        try:
+            return stat(self.temp_path).st_size
+        except OSError:
+            pass
+        return 0
+
+
     def finalize(self, *, delete = False):
         """Move tempfile to its target location"""
+
+        self.finalized = True
 
         if delete and self.temp_path and os.path.exists(self.temp_path):
             util.remove_file(self.temp_path)

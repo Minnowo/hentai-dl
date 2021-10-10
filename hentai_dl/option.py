@@ -10,7 +10,7 @@ import argparse
 import logging
 import json
 import sys
-from . import version
+from .meta import __version__
 
 
 class ConfigAction(argparse.Action):
@@ -86,7 +86,7 @@ def build_parser():
     )
     general.add_argument(
         "--version",
-        action="version", version=version.__version__,
+        action="version", version=__version__,
         help="Print program version and exit",
     )
     general.add_argument(

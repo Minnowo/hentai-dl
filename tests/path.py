@@ -7,16 +7,13 @@
 
 """Filesystem path handling"""
 
-import os
-import re
-import time
+import os.path
 import shutil
-import functools
-from email.utils import mktime_tz, parsedate_tz
+
+from re import compile
 
 from . import util
 from .util import WINDOWS
-
 
 class PathFormat:
     EXTENSION_MAP = {
@@ -50,7 +47,7 @@ class PathFormat:
         self.replace = replace
 
         # the regex function that will replace characters
-        self._replace = re.compile(f"[{self.RESTRICT_MAP['auto']}]").sub
+        self._replace = compile(f"[{self.RESTRICT_MAP['auto']}]").sub
 
         self.set_directory(directory)
         self.set_filename(filename)
@@ -63,7 +60,9 @@ class PathFormat:
             return path
 
         strip = self.STRIP_MAP["auto"]
-        path = path.replace(os.altsep, os.sep)
+
+        if os.altsep and os.altsep in path:
+            path = path.replace(os.altsep, os.sep)
 
         # remove empty strings from the split
         spl = list(filter(None, path.split(os.sep)))

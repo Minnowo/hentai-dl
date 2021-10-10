@@ -74,6 +74,7 @@ class HttpDownloader(DownloaderBase):
 
 
     def download(self, url, pathfmt):
+        """Downloads the url and saves to the given path"""
         try:
             return self._download_impl(url, pathfmt)
         
@@ -84,24 +85,27 @@ class HttpDownloader(DownloaderBase):
         finally:
             # remove file from incomplete downloads
             if self.downloading:
-                util.remove_file(pathfmt.temppath)
+                util.remove_file(pathfmt.temp_path)
 
 
 
     def _download_impl(self, url, pathfmt):
+        """Download mainloop"""
+
         response = None
         tries = 0
         msg = ""
 
         kwdict = pathfmt.kwdict
-        adjust_extension = kwdict.get("_http_adjust_extension", self.adjust_extension)
 
         while True:
             if tries:
                 if response:
                     response.close()
                     response = None
+                    
                 self.log.warning("%s (%s/%s)", msg, tries, self.retries+1)
+
                 if tries > self.retries:
                     return False
                 time.sleep(tries)
@@ -111,13 +115,17 @@ class HttpDownloader(DownloaderBase):
 
             # collect HTTP headers
             headers = {"Accept": "*/*"}
+
             #   file-specific headers
-            extra = kwdict.get("_http_headers")
-            if extra:
-                headers.update(extra)
+            # extra = kwdict.get("_http_headers")
+            
+            # if extra:
+            #     headers.update(extra)
+            
             #   general headers
             if self.headers:
                 headers.update(self.headers)
+            
             #   partial content
             file_size = pathfmt.part_size()
             if file_size:
@@ -148,8 +156,10 @@ class HttpDownloader(DownloaderBase):
 
             else:
                 msg = "'{} {}' for '{}'".format(code, response.reason, url)
+
                 if code == 429 or 500 <= code < 600:  # Server Error
                     continue
+                
                 self.log.warning(msg)
                 return False
 
@@ -162,35 +172,35 @@ class HttpDownloader(DownloaderBase):
             # set missing filename extension from MIME type
             if not pathfmt.extension:
                 pathfmt.set_extension(self._find_extension(response))
+
                 if pathfmt.exists():
-                    pathfmt.temppath = ""
                     return True
 
             # check file size
             size = text.parse_int(size, None)
+
             if size is not None:
                 if self.min_file_size and size < self.min_file_size:
-                    self.log.warning(
-                        "File size smaller than allowed minimum (%s < %s)", size, self.min_file_size)
+                    self.log.warning("File size smaller than allowed minimum (%s < %s)", size, self.min_file_size)
                     return False
+
                 if self.max_file_size and size > self.max_file_size:
-                    self.log.warning(
-                        "File size larger than allowed maximum (%s > %s)", size, self.max_file_size)
+                    self.log.warning("File size larger than allowed maximum (%s > %s)", size, self.max_file_size)
                     return False
 
             content = response.iter_content(self.chunk_size)
 
             # check filename extension against file header
-            if adjust_extension and not offset and pathfmt.extension in FILE_SIGNATURES:
+            if not offset and self.adjust_extension and pathfmt.extension in FILE_SIGNATURES:
                 try:
                     file_header = next(content if response.raw.chunked else response.iter_content(16), b"")
+
                 except (RequestException, SSLError, OpenSSLError) as exc:
                     msg = str(exc)
                     print()
                     continue
-                if self._adjust_extension(pathfmt, file_header) and \
-                        pathfmt.exists():
-                    pathfmt.temppath = ""
+
+                if self._adjust_extension(pathfmt, file_header) and pathfmt.exists():
                     return True
 
             # set open mode
@@ -205,18 +215,22 @@ class HttpDownloader(DownloaderBase):
             # download content
             self.downloading = True
             with pathfmt.open(mode) as fp:
+                
                 if file_header:
                     fp.write(file_header)
                     offset += len(file_header)
+
                 elif offset:
-                    if adjust_extension and \
-                            pathfmt.extension in FILE_SIGNATURES:
+                    if self.adjust_extension and pathfmt.extension in FILE_SIGNATURES:
                         self._adjust_extension(pathfmt, fp.read(16))
                     fp.seek(offset)
 
-                self.out.start(pathfmt.path)
+                # self.out.start(pathfmt.path)
+                print("starting download of: {}".format(url))
+
                 try:
                     self.receive(fp, content, size, offset)
+                
                 except (RequestException, SSLError, OpenSSLError) as exc:
                     msg = str(exc)
                     print()
@@ -224,8 +238,7 @@ class HttpDownloader(DownloaderBase):
 
                 # check file size
                 if size and fp.tell() < size:
-                    msg = "file size mismatch ({} < {})".format(
-                        fp.tell(), size)
+                    msg = "file size mismatch ({} < {})".format(fp.tell(), size)
                     print()
                     continue
 
@@ -238,9 +251,9 @@ class HttpDownloader(DownloaderBase):
 
     @staticmethod
     def receive(fp, content, bytes_total, bytes_downloaded):
-        write = fp.write
+
         for data in content:
-            write(data)
+            fp.write(data)
 
 
     def _receive_rate(self, fp, content, bytes_total, bytes_downloaded):
@@ -299,6 +312,7 @@ class HttpDownloader(DownloaderBase):
     def _adjust_extension(pathfmt, file_header):
         """Check filename extension against file header"""
         sig = FILE_SIGNATURES[pathfmt.extension]
+
         if not file_header.startswith(sig):
             for ext, sig in FILE_SIGNATURES.items():
                 if file_header.startswith(sig):
