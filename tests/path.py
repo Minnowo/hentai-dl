@@ -7,12 +7,16 @@
 
 """Filesystem path handling"""
 
-import os.path
+import os
 import re
+import time
 import shutil
+import functools
+from email.utils import mktime_tz, parsedate_tz
 
-from . import util, formatter, exception
+from . import util
 from .util import WINDOWS
+
 
 class PathFormat:
     EXTENSION_MAP = {
