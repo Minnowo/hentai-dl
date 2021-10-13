@@ -56,6 +56,26 @@ class PathFormat:
         self.set_filename(filename)
         self.set_extension(extension)
 
+    @staticmethod
+    def from_path(path : str):
+
+        # altsep is None on unix, need to check
+        if os.altsep and os.altsep in path:
+            path = path.replace(os.altsep, os.sep)
+
+        _ = path.rsplit(os.sep, 1)
+
+        if len(_) != 2:
+            return None 
+
+        directory, name = _[0], _[1]
+
+        pformat = PathFormat()
+        pformat.set_directory(directory, build_path=False)
+        pformat.set_filename(name)
+
+        return pformat
+
     def clean(self, path : str):
         """Removes illegal characters and strips the string"""
 

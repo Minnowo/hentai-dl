@@ -43,20 +43,20 @@ class HttpDownloader(DownloaderBase):
             self.retries = float("inf")
 
         if self.min_file_size:
-            self.min_file_size = text.parse_bytes(self.min_file_size)
+            self.min_file_size = util.parse_bytes(self.min_file_size)
 
             if not self.min_file_size:
                 self.log.warning("Invalid minimum file size (%r)", self.min_file_size)
 
         if self.max_file_size:
-            self.max_file_size = text.parse_bytes(self.max_file_size)
+            self.max_file_size = util.parse_bytes(self.max_file_size)
             
             if not self.max_file_size:
                 self.log.warning("Invalid maximum file size (%r)", self.max_file_size)
             
 
         if self.rate:
-            rate = text.parse_bytes(self.rate)
+            rate = util.parse_bytes(self.rate)
 
             if rate:
                 if rate < self.chunk_size:
@@ -96,7 +96,7 @@ class HttpDownloader(DownloaderBase):
         tries = 0
         msg = ""
 
-        kwdict = pathfmt.kwdict
+        # kwdict = pathfmt.kwdict
 
         while True:
             if tries:
@@ -164,10 +164,10 @@ class HttpDownloader(DownloaderBase):
                 return False
 
             # check for invalid responses
-            validate = kwdict.get("_http_validate")
-            if validate and not validate(response):
-                self.log.warning("Invalid response")
-                return False
+            # validate = kwdict.get("_http_validate")
+            # if validate and not validate(response):
+            #     self.log.warning("Invalid response")
+            #     return False
 
             # set missing filename extension from MIME type
             if not pathfmt.extension:
@@ -177,7 +177,7 @@ class HttpDownloader(DownloaderBase):
                     return True
 
             # check file size
-            size = text.parse_int(size, None)
+            size = util.parse_int(size, None)
 
             if size is not None:
                 if self.min_file_size and size < self.min_file_size:

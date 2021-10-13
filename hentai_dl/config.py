@@ -11,6 +11,7 @@ import json
 import os.path
 import logging
 from .util import WINDOWS, SENTINEL
+from . import util
 
 log = logging.getLogger("config")
 
@@ -19,15 +20,15 @@ _config = {}
 
 if WINDOWS:
     _default_configs = [
-        r"%APPDATA%\gallery-dl\config.json",
-        r"%USERPROFILE%\gallery-dl\config.json",
-        r"%USERPROFILE%\gallery-dl.conf",
+        r"%APPDATA%\hentai-dl\config.json",
+        r"%USERPROFILE%\hentai-dl\config.json",
+        r"%USERPROFILE%\hentai-dl.conf",
     ]
 else:
     _default_configs = [
-        "/etc/gallery-dl.conf",
-        "${XDG_CONFIG_HOME}/gallery-dl/config.json" if os.environ.get("XDG_CONFIG_HOME") else "${HOME}/.config/gallery-dl/config.json",
-        "${HOME}/.gallery-dl.conf",
+        "/etc/hentai-dl.conf",
+        "${XDG_CONFIG_HOME}/hentai-dl/config.json" if os.environ.get("XDG_CONFIG_HOME") else "${HOME}/.config/hentai-dl/config.json",
+        "${HOME}/.hentai-dl.conf",
     ]
 
 
@@ -35,7 +36,42 @@ if getattr(sys, "frozen", False):
     # look for config file in PyInstaller executable directory (#682)
     _default_configs.append(os.path.join(os.path.dirname(sys.executable), "hentai-dl.conf",))
 
+def load(files=None, strict=False, fmt="json"):
+    """Load JSON configuration files"""
+    if fmt == "yaml":
+        try:
+            import yaml
+            parsefunc = yaml.safe_load
 
+        except ImportError:
+            log.error("Could not import 'yaml' module")
+            return
+
+    else:
+        parsefunc = json.load
+
+    for path in files or _default_configs:
+        path = util.expand_path(path)
+
+        try:
+            with open(path, encoding="utf-8") as file:
+                confdict = parsefunc(file)
+
+        except OSError as exc:
+            if strict:
+                log.error(exc)
+                sys.exit(1)
+
+        except Exception as exc:
+            log.warning("Could not parse '%s': %s", path, exc)
+            if strict:
+                sys.exit(2)
+                
+        else:
+            if not _config:
+                _config.update(confdict)
+            else:
+                util.combine_dict(_config, confdict)
 
 def clear():
     """Reset configuration to an empty state"""

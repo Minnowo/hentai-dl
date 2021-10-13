@@ -15,6 +15,8 @@ from . import extractor
 from . import downloader
 from . import exceptions
 from . import output
+from .path import PathFormat
+from . import config
 
 class Job():
 
@@ -92,24 +94,33 @@ class DownloaderJob(Job):
         pass
 
 
-    def handle_url(self, url):
-        pass
+    def handle_url(self, url, file_meta_dict):
+        """Formats and downloads the given url"""
+
+        name = file_meta_dict.get("filename")
+        ext  = file_meta_dict.get("extension", )
 
     def handle_directory(self, directory):
-        pass 
+        """Formats and creates the given directory"""
 
 
-    def download(self, url : str, path : str):
+    def download(self, url : str, path):
         """Download the given url, save to the given path"""
 
         downloader = self.get_downloader_from_url(url)
-
+        
         if not downloader:
             self.write_unsupported_url(url)
             return False
 
+        if isinstance(path, str):
+            path = PathFormat.from_path(path)
+
         try:
-            return downloader.download(url, path)
+            if downloader.download(url, path):
+                path.finalize()
+                return True 
+            return False
         except OSError as ex:
             self.logger.warning("%s: %s", ex.__class__.__name__, ex)
             return False
@@ -147,5 +158,5 @@ class DownloaderJob(Job):
         """Get a downloader for the given url"""
 
         scheme = urlparse(url)
-        return self.get_downloader_from_scheme(scheme)
+        return self.get_downloader_from_scheme(scheme.scheme)
 

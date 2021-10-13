@@ -64,6 +64,44 @@ def shorten_string_eaw(txt, limit, sep="…", cache=EAWCache()):
 
     return txt[:left] + sep + txt[right+1:]
 
+def combine_dict(a, b):
+    """Recursively combine the contents of 'b' into 'a'"""
+    for key, value in b.items():
+        if key in a and isinstance(value, dict) and isinstance(a[key], dict):
+            combine_dict(a[key], value)
+            
+        else:
+            a[key] = value
+    return a
+
+def parse_bytes(value, default=0, suffixes="bkmgtp"):
+    """Convert a bytes-amount ("500k", "2.5M", ...) to int"""
+    try:
+        last = value[-1].lower()
+    except (TypeError, KeyError, IndexError):
+        return default
+
+    if last in suffixes:
+        mul = 1024 ** suffixes.index(last)
+        value = value[:-1]
+    else:
+        mul = 1
+
+    try:
+        return round(float(value) * mul)
+    except ValueError:
+        return default
+
+
+def parse_int(value, default=0):
+    """Convert 'value' to int"""
+    if not value:
+        return default
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        return default
+
 
 def identity(x):
     """Returns its argument"""
