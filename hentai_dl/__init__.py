@@ -5,11 +5,13 @@
 # published by the Free Software Foundation.
 
 import sys 
+import platform
 from . import output
 from . import option
 from . import config
 from .downloader import http
 from .job import DownloaderJob
+from .meta import __version__
 
 
 def main():
@@ -21,6 +23,9 @@ def main():
     args = parser.parse_args()
     log = output.initialize_logging(args.loglevel)
 
+    log.debug("Version %s%s", __version__)
+    log.debug("Python %s - %s", platform.python_version(), platform.platform())
+    log.warning("uwu")
     # configuration
     if args.load_config:
         config.load()
@@ -31,14 +36,14 @@ def main():
     if args.yamlfiles:
         config.load(args.yamlfiles, strict=True, fmt="yaml")
 
-    if args.postprocessors:
-        config.set((), "postprocessors", args.postprocessors)
+    # if args.postprocessors:
+    #     config.set((), "postprocessors", args.postprocessors)
 
-    if args.abort:
-        config.set((), "skip", "abort:" + str(args.abort))
+    # if args.abort:
+    #     config.set((), "skip", "abort:" + str(args.abort))
 
-    if args.terminate:
-        config.set((), "skip", "terminate:" + str(args.terminate))
+    # if args.terminate:
+    #     config.set((), "skip", "terminate:" + str(args.terminate))
 
     for opts in args.options:
         config.set(*opts)

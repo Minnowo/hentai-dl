@@ -98,7 +98,12 @@ class DownloaderJob(Job):
         """Formats and downloads the given url"""
 
         name = file_meta_dict.get("filename")
-        ext  = file_meta_dict.get("extension", )
+        ext  = file_meta_dict.get("extension")
+
+        out_path = PathFormat()
+        out_path.set_directory(self.outpur_directory, build_path=False)
+        out_path.set_filename(name, build_path=False)
+        out_path.set_extension(ext)
 
     def handle_directory(self, directory):
         """Formats and creates the given directory"""
