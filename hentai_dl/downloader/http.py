@@ -12,7 +12,7 @@ import mimetypes
 from requests.exceptions import RequestException, ConnectionError, Timeout
 from ssl import SSLError
 
-from .. import text, util
+from .. import text, util, exceptions
 from .common import DownloaderBase
 from .const import MIME_TYPES, FILE_SIGNATURES
 
@@ -29,6 +29,7 @@ class HttpDownloader(DownloaderBase):
         self.chunk_size = 16384
         self.downloading = False
 
+        self.cancled = False
         self.adjust_extension   = self.config("adjust-extensions", True)
         self.progress           = self.config("progress", 3.0)
         self.headers            = self.config("headers")
@@ -71,7 +72,9 @@ class HttpDownloader(DownloaderBase):
         if self.progress is not None:
             self.receive = self._receive_rate
 
-
+    def cancel(self):
+        """Cancels downloads"""
+        self.cancled = True
 
     def download(self, url, pathfmt):
         """Downloads the url and saves to the given path"""
@@ -99,6 +102,11 @@ class HttpDownloader(DownloaderBase):
         # kwdict = pathfmt.kwdict
 
         while True:
+            if self.cancled:
+                if response:
+                    response.close()
+                    response = None
+                return False
             if tries:
                 if response:
                     response.close()
@@ -230,8 +238,8 @@ class HttpDownloader(DownloaderBase):
 
                 try:
                     self.receive(fp, content, size, offset)
-                
-                except (RequestException, SSLError, OpenSSLError) as exc:
+                    
+                except (RequestException, SSLError, OpenSSLError, exceptions.DownloadCanceledError) as exc:
                     msg = str(exc)
                     print()
                     continue
@@ -249,10 +257,12 @@ class HttpDownloader(DownloaderBase):
         return True
 
 
-    @staticmethod
-    def receive(fp, content, bytes_total, bytes_downloaded):
+    # @staticmethod
+    def _receive(self, fp, content, bytes_total, bytes_downloaded):
 
         for data in content:
+            if self.cancled:
+                raise exceptions.DownloadCanceledError()
             fp.write(data)
 
 
@@ -264,6 +274,10 @@ class HttpDownloader(DownloaderBase):
         t1 = tstart = time.time()
 
         for data in content:
+
+            if self.cancled:
+                raise exceptions.DownloadCanceledError()
+
             write(data)
 
             t2 = time.time()           # current time

@@ -12,6 +12,8 @@
 class NoExtractorError(Exception):
     pass 
 
+class DownloadCanceledError(Exception):
+    pass
 
 class GalleryDLException(Exception):
     """Base class for GalleryDL exceptions"""

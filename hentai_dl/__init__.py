@@ -49,7 +49,8 @@ def main():
         config.set(*opts)
 
     dl = DownloaderJob("https://nhentai.net/g/375952/1/")
-    dl.download("https://i.nhentai.net/galleries/2034672/1.png", "D:\\Ωtmp\\test.png")
+    dl.run()
+    # dl.download("https://i.nhentai.net/galleries/2034672/1.png", "D:\\Ωtmp\\test.png")
 
     print(args.options)
     print("all done")
