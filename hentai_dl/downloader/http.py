@@ -31,7 +31,7 @@ class HttpDownloader(DownloaderBase):
 
         self.cancled = False
         self.adjust_extension   = self.config("adjust-extensions", True)
-        self.progress           = self.config("progress", 3.0)
+        # self.progress           = self.config("progress", 3.0)
         self.headers            = self.config("headers")
         self.min_file_size      = self.config("filesize-min")
         self.max_file_size      = self.config("filesize-max")
@@ -39,6 +39,7 @@ class HttpDownloader(DownloaderBase):
         self.timeout            = self.config("timeout", extractor._timeout)
         self.verify             = self.config("verify", extractor._verify)
         self.rate               = self.config("rate")
+
 
         if self.retries < 0:
             self.retries = float("inf")
@@ -55,7 +56,7 @@ class HttpDownloader(DownloaderBase):
             if not self.max_file_size:
                 self.log.warning("Invalid maximum file size (%r)", self.max_file_size)
             
-
+        self.receive = self._receive
         if self.rate:
             rate = util.parse_bytes(self.rate)
 
@@ -69,8 +70,8 @@ class HttpDownloader(DownloaderBase):
             else:
                 self.log.warning("Invalid rate limit (%r)", self.rate)
 
-        if self.progress is not None:
-            self.receive = self._receive_rate
+        # if self.progress is not None:
+        #     self.receive = self._receive_rate
 
     def cancel(self):
         """Cancels downloads"""
@@ -81,8 +82,8 @@ class HttpDownloader(DownloaderBase):
         try:
             return self._download_impl(url, pathfmt)
         
-        except Exception:
-            print()
+        except Exception as e:
+            print(e)
             raise
 
         finally:
@@ -106,6 +107,7 @@ class HttpDownloader(DownloaderBase):
                 if response:
                     response.close()
                     response = None
+                self.downloading = False
                 return False
             if tries:
                 if response:
@@ -205,7 +207,7 @@ class HttpDownloader(DownloaderBase):
 
                 except (RequestException, SSLError, OpenSSLError) as exc:
                     msg = str(exc)
-                    print()
+                    print(msg)
                     continue
 
                 if self._adjust_extension(pathfmt, file_header) and pathfmt.exists():
@@ -234,20 +236,21 @@ class HttpDownloader(DownloaderBase):
                     fp.seek(offset)
 
                 # self.out.start(pathfmt.path)
-                print("starting download of: {}".format(url))
+                print("downloading: {}, saving: {}".format(url, pathfmt.temp_path))
 
                 try:
+                    # print("recieve start")
                     self.receive(fp, content, size, offset)
-                    
+                    # print("end receive")
                 except (RequestException, SSLError, OpenSSLError, exceptions.DownloadCanceledError) as exc:
                     msg = str(exc)
-                    print()
+                    print(msg)
                     continue
 
                 # check file size
                 if size and fp.tell() < size:
                     msg = "file size mismatch ({} < {})".format(fp.tell(), size)
-                    print()
+                    print(msg)
                     continue
 
             break
@@ -257,9 +260,9 @@ class HttpDownloader(DownloaderBase):
         return True
 
 
-    # @staticmethod
+    
     def _receive(self, fp, content, bytes_total, bytes_downloaded):
-
+        print("uwu")
         for data in content:
             if self.cancled:
                 raise exceptions.DownloadCanceledError()
@@ -267,8 +270,9 @@ class HttpDownloader(DownloaderBase):
 
 
     def _receive_rate(self, fp, content, bytes_total, bytes_downloaded):
+        print("uwu2")
         rate = self.rate
-        progress = self.progress
+        # progress = self.progress
         bytes_start = bytes_downloaded
         write = fp.write
         t1 = tstart = time.time()
@@ -284,14 +288,14 @@ class HttpDownloader(DownloaderBase):
             elapsed = t2 - t1          # elapsed time
             num_bytes = len(data)
 
-            if progress is not None:
-                bytes_downloaded += num_bytes
-                tdiff = t2 - tstart
-                if tdiff >= progress:
-                    self.out.progress(
-                        bytes_total, bytes_downloaded,
-                        int((bytes_downloaded - bytes_start) / tdiff),
-                    )
+            # if progress is not None:
+            #     bytes_downloaded += num_bytes
+            #     tdiff = t2 - tstart
+            #     if tdiff >= progress:
+            #         self.out.progress(
+            #             bytes_total, bytes_downloaded,
+            #             int((bytes_downloaded - bytes_start) / tdiff),
+                    # )
 
             if rate:
                 expected = num_bytes / rate  # expected elapsed time

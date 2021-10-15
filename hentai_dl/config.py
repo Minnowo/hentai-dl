@@ -157,3 +157,34 @@ def interpolate_common(common, paths, key, default=None, *, conf=_config):
         if value is not SENTINEL:
             return value
     return default
+
+
+
+def set(path, key, value, *, conf=_config):
+    """Set the value of property 'key' for this session"""
+    for p in path:
+        try:
+            conf = conf[p]
+        except KeyError:
+            conf[p] = conf = {}
+    conf[key] = value
+
+
+def setdefault(path, key, value, *, conf=_config):
+    """Set the value of property 'key' if it doesn't exist"""
+    for p in path:
+        try:
+            conf = conf[p]
+        except KeyError:
+            conf[p] = conf = {}
+    return conf.setdefault(key, value)
+
+
+def unset(path, key, *, conf=_config):
+    """Unset the value of property 'key'"""
+    try:
+        for p in path:
+            conf = conf[p]
+        del conf[key]
+    except Exception:
+        pass

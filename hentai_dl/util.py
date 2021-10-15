@@ -4,7 +4,14 @@
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
 
+try:
+    from urllib.parse import unquote
+except ImportError:
+    from urlparse import unquote
+
 from genericpath import exists
+from functools import partial
+from random import uniform
 import sys
 import os.path
 import unicodedata
@@ -12,6 +19,37 @@ import unicodedata
 WINDOWS = (os.name == "nt")
 SENTINEL = object()
 
+LANGUAGEG_CODE_MAP = {
+    "ar": "Arabic",
+    "bg": "Bulgarian",
+    "ca": "Catalan",
+    "cs": "Czech",
+    "da": "Danish",
+    "de": "German",
+    "el": "Greek",
+    "en": "English",
+    "es": "Spanish",
+    "fi": "Finnish",
+    "fr": "French",
+    "he": "Hebrew",
+    "hu": "Hungarian",
+    "id": "Indonesian",
+    "it": "Italian",
+    "ja": "Japanese",
+    "ko": "Korean",
+    "ms": "Malay",
+    "nl": "Dutch",
+    "no": "Norwegian",
+    "pl": "Polish",
+    "pt": "Portuguese",
+    "ro": "Romanian",
+    "ru": "Russian",
+    "sv": "Swedish",
+    "th": "Thai",
+    "tr": "Turkish",
+    "vi": "Vietnamese",
+    "zh": "Chinese",
+}
 
 class EAWCache(dict):
 
@@ -63,6 +101,29 @@ def shorten_string_eaw(txt, limit, sep="…", cache=EAWCache()):
         right -= 1
 
     return txt[:left] + sep + txt[right+1:]
+
+
+def build_duration_func(duration, min=0.0):
+    if not duration:
+        return None
+
+    try:
+        lower, upper = duration
+    except TypeError:
+        pass
+    else:
+        return partial(
+            uniform,
+            lower if lower > min else min,
+            upper if upper > min else min,
+        )
+
+    return partial(
+        identity, 
+        duration if duration > min else min
+        )
+
+
 
 def combine_dict(a, b):
     """Recursively combine the contents of 'b' into 'a'"""
@@ -188,6 +249,15 @@ def remove_directory(path : str) -> bool:
         pass
     return not os.path.isdir(path)
 
+def enumerate_reversed(iterable, start=0, length=None):
+    """Enumerate 'iterable' and return its elements in reverse order"""
+    start -= 1
+    if length is None:
+        length = len(iterable)
+    return zip(
+        range(length - start, start, -1),
+        reversed(iterable),
+    )
 
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
@@ -199,3 +269,69 @@ def resource_path(relative_path):
         base_path = os.path.dirname(os.path.abspath(__file__))
 
     return os.path.join(base_path, relative_path)
+
+def add_nameext_from_url(url, data = None):
+    """Adds 'filename' : filename, 'extension' : extension to the given dict"""
+    if data is None:
+        data = {}
+
+    filename = unquote(get_url_filename(url))
+
+    name, _, ext = filename.rpartition(".")
+
+    if name and len(ext) <= 16:
+        if "filename" not in data:
+            data["filename"] = name
+
+        if "extension" not in data:
+            data["extension"] = ext.lower()
+
+    else:
+        if "filename" not in data:
+            data["filename"] = filename
+            
+        if "extension" not in data:
+            data["extension"] = ""
+
+    return data
+
+def get_url_filename(url : str):
+    """Gets a file name from the given url"""
+    try:
+        return url.split("?")[0].rsplit("/", 1)[-1]
+    except (TypeError, AttributeError):
+        return ""
+
+
+def get_url_ext(url, includeDot = False):
+    """Gets a file extension from the given url"""
+    ext = url.rsplit(".", 1)
+
+    if len(ext) < 2:
+        return ""
+
+    ext = ext[-1]
+    index = ext.find("?") # remove any get requests
+
+    if index != -1:
+        ext = ext[:index]
+
+    if includeDot:
+        return "." + ext.lower().strip()
+    return ext.lower().strip()
+
+
+def code_to_language(code, default=None):
+    """Map an ISO 639-1 language code to its actual name"""
+    return LANGUAGEG_CODE_MAP.get((code or "").lower(), default)
+
+
+def language_to_code(lang, default=None):
+    """Map a language name to its ISO 639-1 code"""
+    if lang is None:
+        return default
+    lang = lang.capitalize()
+    for code, language in LANGUAGEG_CODE_MAP.items():
+        if language == lang:
+            return code
+    return default

@@ -3,7 +3,10 @@
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
-
+try:
+    from urllib.parse import unquote
+except ImportError:
+    from urlparse import unquote
 from genericpath import exists
 import sys
 import os.path
@@ -11,6 +14,28 @@ import unicodedata
 
 WINDOWS = (os.name == "nt")
 
+def get_url_filename(url : str):
+    """Gets a file name from the given url"""
+    try:
+        return url.split("?")[0].rsplit("/", 1)[-1]
+    except (TypeError, AttributeError):
+        return ""
+
+def add_nameext_from_url(url, data = None):
+    """Adds 'filename' : filename, 'extension' : extension to the given dict"""
+    if data is None:
+        data = {}
+
+    filename = unquote(get_url_filename(url))
+
+    name, _, ext = filename.rpartition(".")
+
+    if name and len(ext) <= 16:
+        data["filename"], data["extension"] = name, ext.lower()
+    else:
+        data["filename"], data["extension"] = filename, ""
+
+    return data
 
 class EAWCache(dict):
 

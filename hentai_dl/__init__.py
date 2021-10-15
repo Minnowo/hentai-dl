@@ -36,6 +36,7 @@ def main():
     if args.yamlfiles:
         config.load(args.yamlfiles, strict=True, fmt="yaml")
 
+    config.set((), "use_api", False)
     # if args.postprocessors:
     #     config.set((), "postprocessors", args.postprocessors)
 
@@ -48,9 +49,10 @@ def main():
     for opts in args.options:
         config.set(*opts)
 
-    dl = DownloaderJob("https://nhentai.net/g/375952/1/")
+    # dl = DownloaderJob("https://nhentai.net/g/375952/1/")
+    dl = DownloaderJob("https://doujins.com/hentai-magazine-chapters/haguruma-55114")
     dl.run()
-    # dl.download("https://i.nhentai.net/galleries/2034672/1.png", "D:\\Ωtmp\\test.png")
+    # dl.download("https://i.nhentai.net/galleries/2034672/1.png", "D:\\Ωtmp\\test.png") 
 
     print(args.options)
     print("all done")

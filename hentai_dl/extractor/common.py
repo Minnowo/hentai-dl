@@ -54,14 +54,14 @@ class Extractor():
         self._cfgpath = ("extractor", self.category, self.subcategory)
         self._parentdir = ""
 
-        self._write_pages = False # self.config("write-pages", False)
-        self._retries = 4 # self.config("retries", 4)
-        self._timeout = 30 # self.config("timeout", 30)
-        self._verify = True # self.config("verify", True)
-        # self._interval = util.build_duration_func(
-        #     self.config("sleep-request", self.request_interval),
-        #     self.request_interval_min,
-        # )
+        self._write_pages = self.config("write-pages", False)
+        self._retries = self.config("retries", 4)
+        self._timeout = self.config("timeout", 30)
+        self._verify = self.config("verify", True)
+        self._interval = util.build_duration_func(
+            self.config("sleep-request", self.request_interval),
+            self.request_interval_min,
+        )
 
         if self._retries < 0:
             self._retries = float("inf")
@@ -251,7 +251,7 @@ class Extractor():
         if browser and isinstance(browser, str):
             browser, _, platform = browser.lower().partition(":")
 
-            platform = self.PLATFORM_MAP.get(platform, self.PLATFORM_MAP["linux"])
+            platform = self.PLATFORM_MAP.get(platform, self.PLATFORM_MAP["auto"])
             
             if browser == "chrome":
                 _emulate_browser_chrome(session, platform)
@@ -507,6 +507,10 @@ class GalleryExtractor(Extractor):
         Extractor.__init__(self, match)
         self.gallery_url = self.root + match.group(1) if url is None else url
 
+        # iter_names is for galleries where the filenames are random ( n-ybqzb1dv.jpg )
+        # but you'd want to read / see them in order
+        self.iter_names = False
+
     def items(self):
         self.login()
         page = self.request(self.gallery_url, notfound=self.subcategory).text
@@ -516,31 +520,35 @@ class GalleryExtractor(Extractor):
         if "count" in data:
             if self.config("page-reverse"):
                 images = util.enumerate_reversed(imgs, 1, data["count"])
+
             else:
-                images = zip(
-                    range(1, data["count"]+1),
-                    imgs,
-                )
+                images = zip(range(1, data["count"] + 1), imgs)
+
         else:
-            enum = enumerate
             try:
                 data["count"] = len(imgs)
             except TypeError:
                 pass
+            
+            if self.config("page-reverse"):
+                images = util.enumerate_reversed(imgs, 1)
+
             else:
-                if self.config("page-reverse"):
-                    enum = util.enumerate_reversed
-            images = enum(imgs, 1)
+                images = enumerate(imgs, 1)
+
 
         yield Message.Directory, data
-        for data[self.enum], (url, imgdata) in images:
-            if imgdata:
-                data.update(imgdata)
-                if "extension" not in imgdata:
-                    text.nameext_from_url(url, data)
-            else:
-                text.nameext_from_url(url, data)
-            yield Message.Url, url, data
+
+        # compute the z_fill once even if its not used
+        z_fill = len(str(data["count"]))
+
+        for i, (url, imgdata) in images:
+            util.add_nameext_from_url(url, imgdata)
+            
+            if self.iter_names:
+                imgdata["filename"] = "{}".format(i).zfill(z_fill)
+
+            yield Message.Url, url, imgdata
 
     def login(self):
         """Login and set necessary cookies"""

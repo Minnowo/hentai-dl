@@ -15,14 +15,14 @@ import signal
 from time import sleep
 from concurrent.futures import ThreadPoolExecutor
 
+from hentai_dl.extractor.message import Message
+
 from . import extractor
 from . import downloader
 from . import exceptions
 from . import output
 from .path import PathFormat
 from . import config
-
-semaphore = multiprocessing.Semaphore(1)
 
 class Job():
 
@@ -82,19 +82,7 @@ class Job():
         if self.logger:
             self.logger.info("Unsupported url: %s", url)
 
-def _init_worker():
-    signal.signal(signal.SIGINT, _subprocess_signal)
 
-
-def _subprocess_signal(signal, frame):
-    if semaphore.acquire(timeout=1):
-        print('Ctrl-C pressed, exiting sub processes ...')
-
-    raise KeyboardInterrupt
-
-def _download_wrapper(obj, url):
-    print("download wrapper running: ",url)
-    obj.handle_url(url, None)
 
 class DownloaderJob(Job):
     
@@ -109,22 +97,18 @@ class DownloaderJob(Job):
 
 
     def run(self):
-        # testing urls
-        urls = [
-            "https://i.nhentai.net/galleries/2035133/3.jpg",
-            "https://i.nhentai.net/galleries/2035133/4.jpg",
-            "https://i.nhentai.net/galleries/2035133/5.jpg",
-            "https://i.nhentai.net/galleries/2035133/6.jpg",
-            "https://i.nhentai.net/galleries/2035133/7.jpg",
-            "https://i.nhentai.net/galleries/2035133/8.jpg"
-        ]
-        
-        queue = [url for url in urls if url]
 
         with ThreadPoolExecutor(max_workers=5) as exec:
-            # tmp line which will become a generator / iter function from the extractor class
-            results = [exec.submit(self.handle_url, url, {"filename":str(i),"extension":"jpg"}) for i, url in enumerate(queue) if url]
             
+            results = []
+            for message in self.extractor:
+                
+                if message[0] == Message.Url:
+                    results.append(exec.submit(self.handle_url, message[1], message[2]))
+
+                elif message[0] == Message.Directory:
+                    self.handle_directory(message[1])
+
             try:
                 # something to block the main thread to avoid thread.join
                 # this allows for the KeyboardInterrupt to takeplace
@@ -138,7 +122,6 @@ class DownloaderJob(Job):
                 # cancel all downloaders that might be running
                 # this quickly ends the threads allowing them to properly join
                 for scheme, dl in self.downloaders.items():
-                    print("canceling downloader:", scheme)
                     dl.cancel()
 
     def get_file_name(self):
@@ -163,7 +146,7 @@ class DownloaderJob(Job):
         out_path.set_filename(name, build_path=False)
         out_path.set_extension(ext)
 
-        # print("downloading:",out_path)
+        # print(out_path)
         return self.download(url, out_path)
 
 

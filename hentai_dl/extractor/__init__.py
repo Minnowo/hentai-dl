@@ -5,9 +5,10 @@
 # published by the Free Software Foundation.
 
 import re
+from .. import config
 
 modules = [
-    "nhentai",
+    "nhentai_net",
     "doujins_com",
 ]
 
@@ -17,7 +18,7 @@ def find(url):
     for cls in _list_classes():
         match = cls.pattern.match(url)
         if match:
-            return cls(match)
+            return cls(match, config.get((), "use_api", True))
     return None
 
 
