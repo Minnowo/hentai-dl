@@ -10,8 +10,8 @@ except ImportError:
     from urlparse import urlparse
 
 import logging
-import multiprocessing
-import signal
+import os.path
+
 from time import sleep
 from concurrent.futures import ThreadPoolExecutor
 
@@ -91,7 +91,8 @@ class DownloaderJob(Job):
 
         self.logger = self.get_logger("download")
         self.downloaders = {}
-        self.outpur_directory = "/mnt/d/Ωtmp/"
+        self.output_directory = config.get((), "output-directory", "hentai-dl") 
+        self.download_directory = self.output_directory
         self.out = output.select("terminal")
         self.cancled = False
 
@@ -112,22 +113,21 @@ class DownloaderJob(Job):
 
                     elif message[0] == Message.Directory:
                         self.handle_directory(message[1])
-
+                try:
                     # something to block the main thread to avoid thread.join
                     # this allows for the KeyboardInterrupt to takeplace
                     while(any([i.running() for i in results])):
                         sleep(1)
+                except KeyboardInterrupt:
+                    print("keyboard interrupt")
 
-        except KeyboardInterrupt:
-            print("keyboard interrupt")
+                    self.cancled = True
+                    # cancel all downloaders that might be running
+                    # this quickly ends the threads allowing them to properly join
+                    for scheme, dl in self.downloaders.items():
+                        dl.cancel()
 
-            self.cancled = True
-            # cancel all downloaders that might be running
-            # this quickly ends the threads allowing them to properly join
-            for scheme, dl in self.downloaders.items():
-                dl.cancel()
-
-            raise 
+                    raise 
 
         except exceptions.StopExtraction as exc:
             if exc.message:
@@ -160,10 +160,6 @@ class DownloaderJob(Job):
             raise
         
         return status
-                
-
-    def get_file_name(self):
-        pass
 
 
     def handle_url(self, url, file_meta_dict):
@@ -180,7 +176,7 @@ class DownloaderJob(Job):
         ext  = file_meta_dict.get("extension")
 
         out_path = PathFormat()
-        out_path.set_directory(self.outpur_directory, build_path=False)
+        out_path.set_directory(self.download_directory, build_path=False)
         out_path.set_filename(name, build_path=False)
         out_path.set_extension(ext)
 
@@ -190,6 +186,9 @@ class DownloaderJob(Job):
 
     def handle_directory(self, directory):
         """Formats and creates the given directory"""
+        self.download_directory = os.path.join(self.output_directory,  self.extractor.category, directory['title'])
+        # print(directory)
+        # print(self.extractor.category)
 
 
     def download(self, url : str, path):

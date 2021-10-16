@@ -225,7 +225,6 @@ class HttpDownloader(DownloaderBase):
             # download content
             self.downloading = True
             with pathfmt.open(mode) as fp:
-                print("in file")
                 if file_header:
                     fp.write(file_header)
                     offset += len(file_header)

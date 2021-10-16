@@ -91,7 +91,7 @@ def build_parser():
     )
     general.add_argument(
         "-o", "--output",
-        dest="output_directory", metavar="DEST", action=ConfigAction,
+        dest="output-directory", metavar="DEST", action=ConfigAction,
         help="Destination directory",
     )
     general.add_argument(

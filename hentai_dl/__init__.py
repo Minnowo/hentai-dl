@@ -81,6 +81,7 @@ def parse_inputfile(file, log):
 
         yield line
 
+
 def main():
 
     if sys.stdout and sys.stdout.encoding.lower() != "utf-8":
