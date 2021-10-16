@@ -18,7 +18,7 @@ def find(url):
     for cls in _list_classes():
         match = cls.pattern.match(url)
         if match:
-            return cls(match, config.get((), "use_api", True))
+            return cls(match, config.get((), "use-api", True))
     return None
 
 

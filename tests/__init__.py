@@ -35,26 +35,33 @@ Namespace(
 
 def main():
 
-    from .path import PathFormat
-    from .util import get_url_filename, add_nameext_from_url
-    
-    test_urls = [
-        # doujins.com
-        "https://doujins.com/persona/kensoh-ogawa-55130",
-        "https://doujins.com/nausicaa-of-the-valley-of-the-wind/gin-eiji-55126",
-        "https://doujins.com/hololive/darkmaya-55084",
-        "https://doujins.com/hentai-magazine-chapters/haguruma-55114",
-        "https://doujins.com/cg-sets-original-series/akuma-toshi-keikaku-55093",
-        "https://doujins.com/hentai-manga/ozaki-akira-54647#8rte54wj",
-        "minami-chisato-55107",
-        
-        # nhentai.net
-        "https://nhentai.net/g/376445/",
-        "https://nhentai.net/g/38884/",
-    ]
+    try:
+        a = {}
+        print(a["helo"])
+    except KeyError:
+        raise 
 
-    for i in test_urls:
-        print(add_nameext_from_url(i))
+
+    # from .path import PathFormat
+    # from .util import get_url_filename, add_nameext_from_url
+    
+    # test_urls = [
+    #     # doujins.com
+    #     "https://doujins.com/persona/kensoh-ogawa-55130",
+    #     "https://doujins.com/nausicaa-of-the-valley-of-the-wind/gin-eiji-55126",
+    #     "https://doujins.com/hololive/darkmaya-55084",
+    #     "https://doujins.com/hentai-magazine-chapters/haguruma-55114",
+    #     "https://doujins.com/cg-sets-original-series/akuma-toshi-keikaku-55093",
+    #     "https://doujins.com/hentai-manga/ozaki-akira-54647#8rte54wj",
+    #     "minami-chisato-55107",
+        
+    #     # nhentai.net
+    #     "https://nhentai.net/g/376445/",
+    #     "https://nhentai.net/g/38884/",
+    # ]
+
+    # for i in test_urls:
+    #     print(add_nameext_from_url(i))
 
     # name = PathFormat("D://Programming//python", "test///uwu", "py")
     # print(name)

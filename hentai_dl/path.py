@@ -111,6 +111,9 @@ class PathFormat:
         """Build directory path and create it if necessary"""
 
         if not WINDOWS:
+            if not self.directory.startswith(os.sep):
+                self.directory = os.sep + self.directory
+                util.create_directory(self.directory)
             return
 
         # Enable longer-than-260-character paths on Windows

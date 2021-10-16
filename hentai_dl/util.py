@@ -102,6 +102,13 @@ def shorten_string_eaw(txt, limit, sep="…", cache=EAWCache()):
 
     return txt[:left] + sep + txt[right+1:]
 
+def clamp(value, min, max):
+    if value > max:
+        return max 
+    if value < min:
+        return min 
+    return value
+
 
 def build_duration_func(duration, min=0.0):
     if not duration:

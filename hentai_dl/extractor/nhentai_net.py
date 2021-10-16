@@ -39,6 +39,8 @@ class NhentaiGalleryExtractor(NhentaiBase, GalleryExtractor):
         self.use_api = use_api
         GalleryExtractor.__init__(self, match, url)
 
+        self.iter_names = True
+
 
     def metadata(self, page):
         

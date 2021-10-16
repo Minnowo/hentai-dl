@@ -89,6 +89,35 @@ def initialize_logging(loglevel):
 
 
 
+def configure_logging(loglevel):
+    root = logging.getLogger()
+    minlevel = loglevel
+
+    # stream logging handler
+    handler = root.handlers[0]
+    opts = config.interpolate(("output",), "log")
+    if opts:
+        if isinstance(opts, str):
+            opts = {"format": opts}
+        if handler.level == LOG_LEVEL and "level" in opts:
+            handler.setLevel(opts["level"])
+        # if "format" in opts or "format-date" in opts:
+        #     handler.setFormatter(Formatter(
+        #         opts.get("format", LOG_FORMAT),
+        #         opts.get("format-date", LOG_FORMAT_DATE),
+        #     ))
+        if minlevel > handler.level:
+            minlevel = handler.level
+
+    # file logging handler
+    handler = setup_logging_handler("logfile", lvl=loglevel)
+    if handler:
+        root.addHandler(handler)
+        if minlevel > handler.level:
+            minlevel = handler.level
+
+    root.setLevel(minlevel)
+
 
 def setup_logging_handler(key, fmt=LOG_FORMAT, lvl=LOG_LEVEL):
     """Setup a new logging handler"""

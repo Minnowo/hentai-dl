@@ -225,7 +225,7 @@ class HttpDownloader(DownloaderBase):
             # download content
             self.downloading = True
             with pathfmt.open(mode) as fp:
-                
+                print("in file")
                 if file_header:
                     fp.write(file_header)
                     offset += len(file_header)
@@ -262,7 +262,6 @@ class HttpDownloader(DownloaderBase):
 
     
     def _receive(self, fp, content, bytes_total, bytes_downloaded):
-        print("uwu")
         for data in content:
             if self.cancled:
                 raise exceptions.DownloadCanceledError()
@@ -270,12 +269,9 @@ class HttpDownloader(DownloaderBase):
 
 
     def _receive_rate(self, fp, content, bytes_total, bytes_downloaded):
-        print("uwu2")
         rate = self.rate
-        # progress = self.progress
-        bytes_start = bytes_downloaded
         write = fp.write
-        t1 = tstart = time.time()
+        t1 = time.time()
 
         for data in content:
 
@@ -287,15 +283,6 @@ class HttpDownloader(DownloaderBase):
             t2 = time.time()           # current time
             elapsed = t2 - t1          # elapsed time
             num_bytes = len(data)
-
-            # if progress is not None:
-            #     bytes_downloaded += num_bytes
-            #     tdiff = t2 - tstart
-            #     if tdiff >= progress:
-            #         self.out.progress(
-            #             bytes_total, bytes_downloaded,
-            #             int((bytes_downloaded - bytes_start) / tdiff),
-                    # )
 
             if rate:
                 expected = num_bytes / rate  # expected elapsed time

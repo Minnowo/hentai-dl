@@ -91,38 +91,76 @@ class DownloaderJob(Job):
 
         self.logger = self.get_logger("download")
         self.downloaders = {}
-        self.outpur_directory = "D:\\Ωtmp\\"
+        self.outpur_directory = "/mnt/d/Ωtmp/"
         self.out = output.select("terminal")
         self.cancled = False
 
 
     def run(self):
 
-        with ThreadPoolExecutor(max_workers=5) as exec:
-            
-            results = []
-            for message in self.extractor:
+        status = 0
+        log = self.extractor.log
+
+        try:
+            with ThreadPoolExecutor(max_workers=config.get((), "thread-count", 5)) as exec:
                 
-                if message[0] == Message.Url:
-                    results.append(exec.submit(self.handle_url, message[1], message[2]))
+                results = []
+                for message in self.extractor:
+                    
+                    if message[0] == Message.Url:
+                        results.append(exec.submit(self.handle_url, message[1], message[2]))
 
-                elif message[0] == Message.Directory:
-                    self.handle_directory(message[1])
+                    elif message[0] == Message.Directory:
+                        self.handle_directory(message[1])
 
-            try:
-                # something to block the main thread to avoid thread.join
-                # this allows for the KeyboardInterrupt to takeplace
-                while(any([i.running() for i in results])):
-                    sleep(1)
-                    print(".")
-            except KeyboardInterrupt:
-                print("keyboard interrupt")
+                    # something to block the main thread to avoid thread.join
+                    # this allows for the KeyboardInterrupt to takeplace
+                    while(any([i.running() for i in results])):
+                        sleep(1)
 
-                self.cancled = True
-                # cancel all downloaders that might be running
-                # this quickly ends the threads allowing them to properly join
-                for scheme, dl in self.downloaders.items():
-                    dl.cancel()
+        except KeyboardInterrupt:
+            print("keyboard interrupt")
+
+            self.cancled = True
+            # cancel all downloaders that might be running
+            # this quickly ends the threads allowing them to properly join
+            for scheme, dl in self.downloaders.items():
+                dl.cancel()
+
+            raise 
+
+        except exceptions.StopExtraction as exc:
+            if exc.message:
+                log.error(exc.message)
+            status |= exc.code
+
+        except exceptions.TerminateExtraction:
+            raise
+
+        except exceptions.GalleryDLException as exc:
+            log.error("%s: %s", exc.__class__.__name__, exc)
+            status |= exc.code
+
+        except OSError as exc:
+            log.error("Unable to download data:  %s: %s", exc.__class__.__name__, exc)
+            log.debug("", exc_info=True)
+            status |= 128
+
+        except Exception as exc:
+            log.error(("An unexpected error occurred: %s - %s. "
+                       "Please run gallery-dl again with the --verbose flag, "
+                       "copy its output and report this issue on "
+                       "https://github.com/mikf/gallery-dl/issues ."),
+                      exc.__class__.__name__, exc)
+            log.debug("", exc_info=True)
+            status |= 1
+
+        except BaseException:
+            status |= 1
+            raise
+        
+        return status
+                
 
     def get_file_name(self):
         pass

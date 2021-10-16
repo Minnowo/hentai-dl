@@ -91,7 +91,7 @@ def build_parser():
     )
     general.add_argument(
         "-o", "--output",
-        dest="output-directory", metavar="DEST", action=ConfigAction,
+        dest="output_directory", metavar="DEST", action=ConfigAction,
         help="Destination directory",
     )
     general.add_argument(
@@ -192,9 +192,19 @@ def build_parser():
 
     downloader = parser.add_argument_group("Downloader Options")
     downloader.add_argument(
+        "-t", "--threads",
+        dest="thread-count", metavar="N", type=int, action=ConfigAction,
+        help="Number of download threads (max 32))",
+    )
+    downloader.add_argument(
+        "-na", "--no-api",
+        dest="use-api", nargs=0, action=ConfigConstAction, const=False,
+        help="Use webscraping instead of apis",
+    )
+    downloader.add_argument(
         "-r", "--limit-rate",
         dest="rate", metavar="RATE", action=ConfigAction,
-        help="Maximum download rate (e.g. 500k or 2.5M)",
+        help="Maximum download rate PER thread (e.g. 500k or 2.5M)",
     )
     downloader.add_argument(
         "-R", "--retries",
@@ -232,22 +242,22 @@ def build_parser():
         dest="skip", nargs=0, action=ConfigConstAction, const=False,
         help="Do not skip downloads; overwrite existing files",
     )
-    downloader.add_argument(
-        "--no-mtime",
-        dest="mtime", nargs=0, action=ConfigConstAction, const=False,
-        help=("Do not set file modification times according to "
-              "Last-Modified HTTP response headers")
-    )
+    # downloader.add_argument(
+    #     "--no-mtime",
+    #     dest="mtime", nargs=0, action=ConfigConstAction, const=False,
+    #     help=("Do not set file modification times according to "
+    #           "Last-Modified HTTP response headers")
+    # )
     downloader.add_argument(
         "--no-download",
         dest="download", nargs=0, action=ConfigConstAction, const=False,
         help=("Do not download any files")
     )
-    downloader.add_argument(
-        "--no-check-certificate",
-        dest="verify", nargs=0, action=ConfigConstAction, const=False,
-        help="Disable HTTPS certificate validation",
-    )
+    # downloader.add_argument(
+    #     "--no-check-certificate",
+    #     dest="verify", nargs=0, action=ConfigConstAction, const=False,
+    #     help="Disable HTTPS certificate validation",
+    # )
 
     configuration = parser.add_argument_group("Configuration Options")
     configuration.add_argument(
@@ -289,51 +299,51 @@ def build_parser():
     )
 
     selection = parser.add_argument_group("Selection Options")
-    selection.add_argument(
-        "--download-archive",
-        dest="archive", metavar="FILE", action=ConfigAction,
-        help=("Record all downloaded files in the archive file and "
-              "skip downloading any file already in it"),
-    )
-    selection.add_argument(
-        "-A", "--abort",
-        dest="abort", metavar="N", type=int,
-        help=("Stop current extractor run "
-              "after N consecutive file downloads were skipped"),
-    )
-    selection.add_argument(
-        "-T", "--terminate",
-        dest="terminate", metavar="N", type=int,
-        help=("Stop current and parent extractor runs "
-              "after N consecutive file downloads were skipped"),
-    )
+    # selection.add_argument(
+    #     "--download-archive",
+    #     dest="archive", metavar="FILE", action=ConfigAction,
+    #     help=("Record all downloaded files in the archive file and "
+    #           "skip downloading any file already in it"),
+    # )
+    # selection.add_argument(
+    #     "-A", "--abort",
+    #     dest="abort", metavar="N", type=int,
+    #     help=("Stop current extractor run "
+    #           "after N consecutive file downloads were skipped"),
+    # )
+    # selection.add_argument(
+    #     "-T", "--terminate",
+    #     dest="terminate", metavar="N", type=int,
+    #     help=("Stop current and parent extractor runs "
+    #           "after N consecutive file downloads were skipped"),
+    # )
     selection.add_argument(
         "--range",
         dest="image-range", metavar="RANGE", action=ConfigAction,
         help=("Index-range(s) specifying which images to download. "
               "For example '5-10' or '1,3-5,10-'"),
     )
-    selection.add_argument(
-        "--chapter-range",
-        dest="chapter-range", metavar="RANGE", action=ConfigAction,
-        help=("Like '--range', but applies to manga-chapters "
-              "and other delegated URLs"),
-    )
-    selection.add_argument(
-        "--filter",
-        dest="image-filter", metavar="EXPR", action=ConfigAction,
-        help=("Python expression controlling which images to download. "
-              "Files for which the expression evaluates to False are ignored. "
-              "Available keys are the filename-specific ones listed by '-K'. "
-              "Example: --filter \"image_width >= 1000 and "
-              "rating in ('s', 'q')\""),
-    )
-    selection.add_argument(
-        "--chapter-filter",
-        dest="chapter-filter", metavar="EXPR", action=ConfigAction,
-        help=("Like '--filter', but applies to manga-chapters "
-              "and other delegated URLs"),
-    )
+    # selection.add_argument(
+    #     "--chapter-range",
+    #     dest="chapter-range", metavar="RANGE", action=ConfigAction,
+    #     help=("Like '--range', but applies to manga-chapters "
+    #           "and other delegated URLs"),
+    # )
+    # selection.add_argument(
+    #     "--filter",
+    #     dest="image-filter", metavar="EXPR", action=ConfigAction,
+    #     help=("Python expression controlling which images to download. "
+    #           "Files for which the expression evaluates to False are ignored. "
+    #           "Available keys are the filename-specific ones listed by '-K'. "
+    #           "Example: --filter \"image_width >= 1000 and "
+    #           "rating in ('s', 'q')\""),
+    # )
+    # selection.add_argument(
+    #     "--chapter-filter",
+    #     dest="chapter-filter", metavar="EXPR", action=ConfigAction,
+    #     help=("Like '--filter', but applies to manga-chapters "
+    #           "and other delegated URLs"),
+    # )
 
     postprocessor = parser.add_argument_group("Post-processing Options")
     postprocessor.add_argument(
