@@ -18,23 +18,19 @@ import json
 class NhentaiBase():
     """Base class for nhentai extractors"""
     category = "nhentai"
-    root = "https://nhentai.net"
-    media_url = "https://i.nhentai.net"
+    root = "https://nhentai.io"
+    media_url = "https://himg.nl/images/nhentai/"
 
 
 class NhentaiGalleryExtractor(NhentaiBase, GalleryExtractor):
     """Extractor for image galleries from nhentai.net"""
 
-    pattern = r"(?:https?://)?nhentai\.net/g/(\d+)"
+    pattern = r"(?:https?://)?nhentai\.io/([^\/]*)"
 
 
     def __init__(self, match, use_api = False):
 
-        if use_api:
-            url = self.root + "/api/gallery/" + match.group(1)
-
-        else:
-            url = self.root + "/g/" + match.group(1)
+        url = self.root + "/" + match.group(1)
         
         self.use_api = use_api
         GalleryExtractor.__init__(self, match, url)
@@ -42,64 +38,62 @@ class NhentaiGalleryExtractor(NhentaiBase, GalleryExtractor):
         self.iter_names = True
 
 
+    def items(self):
+        self.login()
+        page = self.request(self.gallery_url, notfound=self.subcategory).text
+        data = self.metadata(page)
+        page = self.request(self.gallery_url + "/read/", notfound=self.subcategory).text
+        imgs = self.images(page)
+
+        if "count" in data:
+            if self.config("page-reverse"):
+                images = util.enumerate_reversed(imgs, 1, data["count"])
+
+            else:
+                images = zip(range(1, data["count"] + 1), imgs)
+
+        else:
+            try:
+                data["count"] = len(imgs)
+            except TypeError:
+                pass
+            
+            if self.config("page-reverse"):
+                images = util.enumerate_reversed(imgs, 1)
+
+            else:
+                images = enumerate(imgs, 1)
+
+
+        yield Message.Directory, data
+
+        # compute the z_fill once even if its not used
+        z_fill = len(str(data["count"]))
+
+        for i, (url, imgdata) in images:
+            util.add_nameext_from_url(url, imgdata)
+            
+            if self.iter_names:
+                imgdata["filename"] = "{}".format(i).zfill(z_fill)
+
+            yield Message.Url, url, imgdata
+
+
     def metadata(self, page):
-        
-        if self.use_api:
-            return self.metadata_api(page)
-
-        return self.metadata_scrape(page)
-
-    def metadata_api(self, page):
-        self.data = data = json.loads(page)
-
-        title_en = data["title"].get("english", "")
-        title_ja = data["title"].get("japanese", "")
-
-        info = collections.defaultdict(list)
-        for tag in data["tags"]:
-            info[tag["type"]].append(tag["name"])
-
-        language = ""
-        for language in info["language"]:
-            if language != "translated":
-                language = language.capitalize()
-                break
-
-        return {
-            "title"     : title_en or title_ja,
-            "title_en"  : title_en,
-            "title_ja"  : title_ja,
-            "gallery_id": data["id"],
-            "media_id"  : util.parse_int(data["media_id"]),
-            "date"      : data["upload_date"],
-            "scanlator" : data["scanlator"],
-            "artist"    : info["artist"],
-            "group"     : info["group"],
-            "parody"    : info["parody"],
-            "characters": info["character"],
-            "tags"      : info["tag"],
-            "type"      : info["category"][0] if info["category"] else "",
-            "lang"      : util.language_to_code(language),
-            "language"  : language,
-        } 
-
-    def metadata_scrape(self, page):
-        
         html = BeautifulSoup(page, 'html.parser')
         data = {}
 
         info_div = html.find('div', attrs={'id': 'info'})
 
         data["title"] = info_div.find('h1').text
-        data["title_pretty"] = info_div.find('h1').find('span', attrs={'class': 'pretty'}).text
+
+        p_title = info_div.find('h1').find('span', attrs={'class': 'pretty'})
+        data["title_pretty"] = p_title.text if p_title else ""
         
         subtitle = info_div.find('h2')
         data["subtitle"] = subtitle.text if subtitle else ""
 
-        data["gallery_id"] = util.parse_int(info_div.find("h3", attrs={"id" : "gallery_id"}).text)
-
-        doujinshi_cover = html.find('div', attrs={'id': 'cover'})
-        data["media_id"] = util.parse_int(search('/galleries/([0-9]+)/cover.(jpg|png|gif)$',doujinshi_cover.a.img.attrs['data-src']).group(1))        
+        data["gallery_id"] = -1
 
         needed_fields = [
             'Characters', 'Artists', 'Languages', 'Pages',
@@ -122,45 +116,20 @@ class NhentaiGalleryExtractor(NhentaiBase, GalleryExtractor):
         return data
 
 
-
     def images(self, page):
         """Gets the gallery images"""
-
-        if self.use_api:
-            return self.image_api()
-
-        return self.image_scrape(page)
-
-    def image_api(self):
-        """Gets all the gallery images from the api"""
-
-        ufmt = "{}/galleries/{}/{{}}.{{}}".format(self.media_url, self.data["media_id"])
-        extdict = {"j": "jpg", "p": "png", "g": "gif"}
-
-        return [
-            (ufmt.format(
-                num, 
-                extdict.get(img["t"], "jpg")), 
-                {"width": img["w"], "height": img["h"], "extension" : extdict.get(img["t"], "jpg")}
-                ) for num, img in enumerate(self.data["images"]["pages"], 1)] 
-
-    def image_scrape(self, page):
-        """Gets all gallery images from the web source"""
-
+        
         images = []
  
         html = BeautifulSoup(page, 'html.parser')
 
-        doujinshi_cover = html.find('div', attrs={'id': 'cover'})
-        img_id = search('/galleries/([0-9]+)/cover.(jpg|png|gif)$',doujinshi_cover.a.img.attrs['src']).group(1)
+        doujinshi_cover = html.find('div', attrs={'class': 'readimg'})
 
         index = 0
-        for i in html.find_all('div', attrs={'class': 'thumb-container'}):
+        for i in doujinshi_cover.find_all('img'):
             index += 1
-            thumb_url = i.img.attrs['data-src']
-            ext = thumb_url.rsplit(".", 1)[-1]
-            # "https://i.nhentai.net" + / + galleries + / + xxxxx + / xxx.ext
-            image_url = "%s/galleries/%s/%d.%s" % (self.media_url, img_id, index, ext)
+            image_url = i.attrs['src']
+            ext = image_url.rsplit(".", 1)[-1]
 
             # width and height meta are missing from the gallery page,
             # would require a bunch of requests to get the info without using the api

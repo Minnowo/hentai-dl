@@ -35,12 +35,9 @@ Namespace(
 
 def main():
 
-    try:
-        a = {}
-        print(a["helo"])
-    except KeyError:
-        raise 
 
+
+    print('nyah');print('hello');                     print('uwu');x=5;print(x**2)
 
     # from .path import PathFormat
     # from .util import get_url_filename, add_nameext_from_url

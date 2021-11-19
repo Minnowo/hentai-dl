@@ -9,6 +9,8 @@ from .. import config
 
 modules = [
     "nhentai_net",
+    "nhentai_to",
+    "nhentai_io",
     "doujins_com",
 ]
 
