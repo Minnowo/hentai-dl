@@ -9,8 +9,8 @@
 from bs4 import BeautifulSoup
 from re import search
 
-from .common import GalleryExtractor, Extractor, Message
-from .. import text, util
+from .common import GalleryExtractor
+from .. import util
 import collections
 import json
 

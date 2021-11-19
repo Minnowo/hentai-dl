@@ -312,16 +312,12 @@ def get_url_filename(url : str):
 
 def get_url_ext(url, includeDot = False):
     """Gets a file extension from the given url"""
-    ext = url.rsplit(".", 1)
+    ext = get_url_filename(url).rsplit(".", 1)
 
     if len(ext) < 2:
         return ""
 
     ext = ext[-1]
-    index = ext.find("?") # remove any get requests
-
-    if index != -1:
-        ext = ext[:index]
 
     if includeDot:
         return "." + ext.lower().strip()

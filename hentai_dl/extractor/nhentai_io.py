@@ -4,15 +4,12 @@
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
 
-"""Extractors for https://nhentai.net/"""
+"""Extractors for https://nhentai.io/"""
 
 from bs4 import BeautifulSoup
-from re import search
 
-from .common import GalleryExtractor, Extractor, Message
-from .. import text, util
-import collections
-import json
+from .common import GalleryExtractor, Message
+from .. import util
 
 
 class NhentaiBase():
@@ -136,71 +133,3 @@ class NhentaiGalleryExtractor(NhentaiBase, GalleryExtractor):
             images.append((image_url, {"w" : -1, "h" : -1, "extension" : ext}))
 
         return images
-
-
-# class NhentaiSearchExtractor(NhentaiBase, Extractor):
-#     """Extractor for nhentai search results"""
-
-#     subcategory = "search"
-#     pattern = r"(?:https?://)?nhentai\.net/search/?\?([^#]+)"
-#     test = ("https://nhentai.net/search/?q=touhou", {
-#         "pattern": NhentaiGalleryExtractor.pattern,
-#         "count": 30,
-#         "range": "1-30",
-#     })
-
-
-#     def __init__(self, match):
-#         Extractor.__init__(self, match)
-#         self.params = text.parse_query(match.group(1))
-
-
-#     def items(self):
-#         data = {"_extractor": NhentaiGalleryExtractor}
-#         for gallery_id in self._pagination(self.params):
-#             url = "{}/g/{}/".format(self.root, gallery_id)
-#             yield Message.Queue, url, data
-
-
-#     def _pagination(self, params):
-#         url = "{}/search/".format(self.root)
-#         params["page"] = text.parse_int(params.get("page"), 1)
-
-#         while True:
-#             page = self.request(url, params=params).text
-#             yield from text.extract_iter(page, 'href="/g/', '/')
-#             if 'class="next"' not in page:
-#                 return
-#             params["page"] += 1
-
-
-# class NhentaiFavoriteExtractor(NhentaiBase, Extractor):
-#     """Extractor for nhentai favorites"""
-
-#     subcategory = "favorite"
-#     pattern = r"(?:https?://)?nhentai\.net/favorites/?(?:\?([^#]+))?"
-#     test = ("https://nhentai.net/favorites/",)
-
-
-#     def __init__(self, match):
-#         Extractor.__init__(self, match)
-#         self.params = text.parse_query(match.group(1))
-
-
-#     def items(self):
-#         data = {"_extractor": NhentaiGalleryExtractor}
-#         for gallery_id in self._pagination(self.params):
-#             url = "{}/g/{}/".format(self.root, gallery_id)
-#             yield Message.Queue, url, data
-
-
-#     def _pagination(self, params):
-#         url = "{}/favorites/".format(self.root)
-#         params["page"] = text.parse_int(params.get("page"), 1)
-
-#         while True:
-#             page = self.request(url, params=params).text
-#             yield from text.extract_iter(page, 'href="/g/', '/')
-#             if 'class="next"' not in page:
-#                 return
-#             params["page"] += 1
