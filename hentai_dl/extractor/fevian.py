@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup
 
 from .common import GalleryExtractor, Message
 from .. import util
+from re import search, findall
 
 
 class FevianBase():
@@ -55,8 +56,7 @@ class Sexuad_Blog_FC2_Extractor(GalleryExtractor, FevianBase):
 
         for div in main.find_all("a"):
             if div.img:
-                ext = util.get_url_ext(div.img["src"])
-                images.append((div.img["src"], {"w" : -1, "h" : -1, "extension" : ext}))
+                images.append((div.img["src"], {"w" : -1, "h" : -1, "extension" : util.get_url_ext(div.img["src"])}))
 
         return images
 
@@ -100,8 +100,7 @@ class Erodoujin_Honpo_Work_Extractor(GalleryExtractor, FevianBase):
 
         for div in main.find_all("div", attrs={"class" : "t_b"}):
             if div.img:
-                ext = util.get_url_ext(div.img["src"])
-                images.append((div.img["src"], {"w" : -1, "h" : -1, "extension" : ext}))
+                images.append((div.img["src"], {"w" : -1, "h" : -1, "extension" : util.get_url_ext(div.img["src"])}))
         
 
         return images
@@ -298,54 +297,196 @@ class Ero_Okazu_Work_Extractor(Erodoujin_Honpo_Work_Extractor):
     pattern = r"(?:https?://)?ero\-okazu\.work/(\d+/\d+/\d+/post-\d+(?:-\d+)?)"
     root = "https://ero-okazu.work"
 
-# http://ero-okazu.work/2021/11/19/post-0-864/
-# http://kindan-kjt.com/2021/11/19/post-0-26/
-# http://doujin-susume.work/2021/11/20/post-0-667/
-# http://ero-okazu.work/2021/11/19/post-0-224/
 
-# http://comichara.com/aidorumasuta/kazenotomoshibishoku/kazenotomoshibishoku-5
-# https://nijisenmon.work/archives/hentai_animated_gif-121.html
-# https://nijisenmon.work/archives/hentai_animated_gif-120.html
-# https://mogiero.blog.fc2.com/blog-entry-62640.html
-# https://al.dmm.co.jp/?lurl=https%3A%2F%2Fwww.dmm.co.jp%2Fdc%2Fdoujin%2F-%2Fdetail%2F%3D%2Fcid%3Dd_215100%2F&af_id=dadada123-990&ch=api
-# https://al.dmm.co.jp/?lurl=https%3A%2F%2Fwww.dmm.co.jp%2Fdc%2Fdoujin%2F-%2Fdetail%2F%3D%2Fcid%3Dd_214935%2F&af_id=dadada123-990&ch=api
-# https://al.dmm.co.jp/?lurl=https%3A%2F%2Fwww.dmm.co.jp%2Fdc%2Fdoujin%2F-%2Fdetail%2F%3D%2Fcid%3Dd_214562%2F&af_id=dadada123-990&ch=api
-# http://nukigazo.com/kantaikorekushon/musashi/musashi-19
-# https://al.dmm.co.jp/?lurl=https%3A%2F%2Fwww.dmm.co.jp%2Fdc%2Fdoujin%2F-%2Fdetail%2F%3D%2Fcid%3Dd_215419%2F&af_id=dadada123-990&ch=api
-# http://hadasirori.blog.jp/archives/%E3%80%90%E6%BF%80%E9%81%B8170%E6%9E%9A%E3%80%91%E3%83%AD%E3%83%AA%E7%BE%8E%E5%B0%91%E5%A5%B3%E3%81%8C%E3%82%A2%E3%83%8A%E3%83%AB%E3%81%AB%E3%81%8A%E3%81%A1%E3%82%93%E3%81%A1%E3%82%93%E6%8C%BF%E3%82%8C%E3%82%89%E3%82%8C%E3%81%A6%E3%82%BB%E3%83%83%E3%82%AF%E3%82%B9%E3%81%8C%E3%82%A8%E3%83%AD%E3%81%84%E4%BA%8C%E6%AC%A1%E7%94%BB%E5%83%8F211119.html
-# https://al.dmm.co.jp/?lurl=https%3A%2F%2Fwww.dmm.co.jp%2Fdc%2Fdoujin%2F-%2Fdetail%2F%3D%2Fcid%3Dd_214501%2F&af_id=dadada123-990&ch=api
-# http://comichara.com/kantaikorekushon/akitsumaru/akitsumaru-2
-# http://comichara.com/kantaikorekushon/yuudachi/yuudachi-4
-# http://moeimg.net/16857.html
-# https://kimootoko.net/archives/52258068.html
+
+class Nijisenmon_Work_Extractor(Erodoujin_Honpo_Work_Extractor):
+    # https://nijisenmon.work/archives/hentai_animated_gif-121.html
+
+    pattern = r"(?:https?://)?nijisenmon\.work/archives/([^\/]*)"
+    root = "https://nijisenmon.work/archives"
+    
+    def images(self, page):
+        """Gets the gallery images"""
+        
+        images = []
+ 
+        html = BeautifulSoup(page, 'html.parser')
+
+        main = html.find("div", attrs={"class" : "entry-content"})
+
+        for div in main.find_all("p"):
+            
+            if div.img:
+                # using regex here instead of div.img['src'] because sometimes the src='' is not the image
+                # other times the data-src='' contains the image, this grabs any http/https url
+                for url in findall(r"src=(?:\'|\")(https?://[^\'\"]*)(?:\'|\")", str(div.img)):
+                    ext = util.get_url_ext(url)
+                    images.append((url, {"w" : -1, "h" : -1, "extension" : ext}))
+
+        return images
+
+
+class Comichara_Com_Extractor(Erodoujin_Honpo_Work_Extractor):
+    # http://comichara.com/aidorumasuta/kazenotomoshibishoku/kazenotomoshibishoku-5
+
+    pattern = r"(?:https?://)?comichara\.com/([^\/]*/[^\/]*/[^\/-]*-\d+)"
+    root = "http://comichara.com"
+
+    def images(self, page):
+        """Gets the gallery images"""
+        
+        images = []
+ 
+        html = BeautifulSoup(page, 'html.parser')
+
+        main = html.find("div", attrs={"id" : "the-content"})
+
+        for div in main.find_all("a"):
+            if div.img:
+                images.append((div.img['data-original'], {"w" : -1, "h" : -1, "extension" : util.get_url_ext(div.img['data-original'])}))
+
+        return images
+
+class Erocon_GGER_JP_Extractor(GalleryExtractor, FevianBase):
+    # http://erocon.gger.jp/archives/25718564.html
+
+    pattern = r"(?:https?://)?erocon\.gger\.jp/archives/(\d+).html"
+    root = "http://erocon.gger.jp/archives"
+
+    
+    def __init__(self, match, use_api = False):
+
+        url = self.root + "/" + match.group(1) + ".html"
+
+        self.use_api = False
+        GalleryExtractor.__init__(self, match, url)
+
+        self.iter_names = True
+
+    def metadata(self, page):
+        html = BeautifulSoup(page, 'html.parser')
+        data = {}
+
+        data["title"] = html.find('h1', attrs={"class" : "article-title"}).text.strip()
+
+        self.data = data 
+        return data
+
+    def images(self, page):
+        """Gets the gallery images"""
+        
+        images = []
+ 
+        html = BeautifulSoup(page, 'html.parser')
+
+        main = html.find("div", attrs={"class" : "article-body-inner"})
+
+        for div in main.find_all("div", attrs={"class" : "imgbox"}):
+            if div.img:
+                images.append((div.img['src'], {"w" : -1, "h" : -1, "extension" : util.get_url_ext(div.img['src'])}))
+
+        return images
+
+class Moeimg_Net_Extractor(GalleryExtractor, FevianBase):
+    # http://moeimg.net/16857.html
+
+    pattern = r"(?:https?://)?moeimg\.net/(\d+).html"
+    root = "http://moeimg.net"
+
+    
+    def __init__(self, match, use_api = False):
+
+        url = self.root + "/" + match.group(1) + ".html"
+
+        self.use_api = False
+        GalleryExtractor.__init__(self, match, url)
+
+        self.iter_names = True
+
+    def metadata(self, page):
+        html = BeautifulSoup(page, 'html.parser')
+        data = {}
+
+        data["title"] = html.find('h1', attrs={"class" : "title"}).text.strip()
+
+        self.data = data 
+        return data
+
+    def images(self, page):
+        """Gets the gallery images"""
+        
+        images = []
+ 
+        html = BeautifulSoup(page, 'html.parser')
+
+        main = html.find("div", attrs={"class" : "post-single"})
+
+        for div in main.find_all("div", attrs={"class" : "box"}):
+            if div.img:
+                images.append((div.img['src'], {"w" : -1, "h" : -1, "extension" : util.get_url_ext(div.img['src'])}))
+
+        return images
+
+
+class Moeimg_Net_Extractor(GalleryExtractor, FevianBase):
+    # https://kimootoko.net/archives/52258068.html
+
+    pattern = r"(?:https?://)?kimootoko\.net/archives/(\d+).html"
+    root = "http://kimootoko.net/archives"
+
+    
+    def __init__(self, match, use_api = False):
+
+        url = self.root + "/" + match.group(1) + ".html"
+
+        self.use_api = False
+        GalleryExtractor.__init__(self, match, url)
+
+        self.iter_names = True
+
+    def metadata(self, page):
+        html = BeautifulSoup(page, 'html.parser')
+        data = {}
+
+        data["title"] = html.find('h1', attrs={"class" : "entry-title"}).text.strip()
+
+        self.data = data 
+        return data
+
+    def images(self, page):
+        """Gets the gallery images"""
+        
+        images = []
+ 
+        html = BeautifulSoup(page, 'html.parser')
+
+        main = html.find("div", attrs={"class" : "clearfix"})
+
+        for div in main.find_all("a"):
+            if div.img:
+                images.append((div.img['src'], {"w" : -1, "h" : -1, "extension" : util.get_url_ext(div.img['src'])}))
+
+        return images
+
+
 # https://erokan.net/archives/329732
-# http://erocon.gger.jp/archives/25718564.html
 # http://nukigazo.com/kantaikorekushon/aiowa/aiowa-21
-# https://nijisenmon.work/archives/hentai_animated_gif-118.html
 # https://al.dmm.co.jp/?lurl=https%3A%2F%2Fwww.dmm.co.jp%2Fdc%2Fdoujin%2F-%2Fdetail%2F%3D%2Fcid%3Dd_213203%2F&af_id=dadada123-990&ch=api
 # http://moeimg.net/16856.html
 # https://mogiero.blog.fc2.com/blog-entry-62644.html
 # http://loveliveforever.com/paimoro/paimoro-15
 # https://sexuad.blog.fc2.com/e/nijigen-ero-vtuber-siranui
 # https://al.dmm.co.jp/?lurl=https%3A%2F%2Fwww.dmm.co.jp%2Fdc%2Fdoujin%2F-%2Fdetail%2F%3D%2Fcid%3Dd_215936%2F&af_id=dadada123-990&ch=api
-# https://nijisenmon.work/archives/hentai_animated_gif-24.html
 # http://hadasirori.blog.jp/archives/%E3%80%90%E6%BF%80%E9%81%B8127%E6%9E%9A%E3%80%91%E3%82%A8%E3%83%83%E3%83%81%E3%81%A7%E5%8F%AF%E6%84%9B%E3%81%84%E3%83%AD%E3%83%AA%E7%BE%8E%E5%B0%91%E5%A5%B3%E3%81%AE%E3%81%9F%E3%81%BE%E3%82%89%E3%81%AA%E3%81%84%E8%B2%A7%E4%B9%B3%E3%81%A0%E3%81%91%E3%81%A9%E7%BE%8E%E4%B9%B3%E3%81%AE%E4%BA%8C%E6%AC%A1%E7%94%BB%E5%83%8F211119.html
-# https://nijisenmon.work/archives/hentai_animated_gif-122.html
 # http://hadasirori.blog.jp/archives/%E3%80%90%E6%BF%80%E9%81%B8135%E6%9E%9A%E3%80%91%E9%A8%8E%E4%B9%97%E4%BD%8D%E3%82%BB%E3%83%83%E3%82%AF%E3%82%B9%E3%81%A7%E3%82%A8%E3%83%83%E3%83%81%E3%81%AA%E7%B9%8B%E3%81%8C%E3%81%A3%E3%81%A6%E3%82%8B%E3%81%A8%E3%81%93%E4%B8%B8%E8%A6%8B%E3%81%88%E3%81%AA%E3%83%AD%E3%83%AA%E8%B2%A7%E4%B9%B3%E7%BE%8E%E5%B0%91%E5%A5%B3%E3%81%AE%E4%BA%8C%E6%AC%A1%E3%82%A8%E3%83%AD%E7%94%BB%E5%83%8F211119.html
 # https://mogiero.blog.fc2.com/blog-entry-62642.html
 # https://al.dmm.co.jp/?lurl=https%3A%2F%2Fwww.dmm.co.jp%2Fdc%2Fdoujin%2F-%2Fdetail%2F%3D%2Fcid%3Dd_212919%2F&af_id=dadada123-990&ch=api
 # https://mogiero.blog.fc2.com/blog-entry-62645.html
 # https://mogiero.blog.fc2.com/blog-entry-62643.html
-# https://nijisenmon.work/archives/hentai_animated_gif-119.html
-# http://comichara.com/azururen/zara/zara-7
 # https://nijifeti.com/physical_reaction/hatsujou/hatsujou-038_1119.html
-# http://comichara.com/kantaikorekushon/akagi/akagi-2
-# https://nijisenmon.work/archives/hentai_animated_gif-26.html
 # https://al.dmm.co.jp/?lurl=https%3A%2F%2Fwww.dmm.co.jp%2Fdc%2Fdoujin%2F-%2Fdetail%2F%3D%2Fcid%3Dd_214299%2F&af_id=dadada123-990&ch=api
 # https://www.nijioma.blog/hentai-ananotoriko-j?utm_source=rss&utm_medium=rss&utm_campaign=hentai-ananotoriko-j
 # https://mogiero.blog.fc2.com/blog-entry-62648.html
-# http://comichara.com/onihoronoha/nemameko/nemameko-6
-# https://nijisenmon.work/archives/hentai_animated_gif-25.html
 # https://mogiero.blog.fc2.com/blog-entry-62646.html
 # https://al.dmm.co.jp/?lurl=https%3A%2F%2Fwww.dmm.co.jp%2Fdc%2Fdoujin%2F-%2Fdetail%2F%3D%2Fcid%3Dd_215930%2F&af_id=dadada123-990&ch=api
 
@@ -360,5 +501,5 @@ class Ero_Okazu_Work_Extractor(Erodoujin_Honpo_Work_Extractor):
 
 # https://xn--r8jwklh769h2mc880dk1o431a.com/%e4%ba%8c%e6%ac%a1%e3%82%a8%e3%83%ad%e7%94%bb%e5%83%8f/post-33032
 # https://xn--r8jwklh769h2mc880dk1o431a.com/%e4%ba%8c%e6%ac%a1%e3%82%a8%e3%83%ad%e7%94%bb%e5%83%8f/post-33029
-# https://nijisenmon.work/archives/post-19922.html
 # http://situero.com/kijoukurai/kijoukurai-20
+
