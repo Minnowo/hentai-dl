@@ -4,7 +4,7 @@
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
 
-
+import datetime
 
 def parse_bytes(value, default = 0, suffixes = "bkmgtp"):
     """Convert a bytes-amount ("500k", "2.5M", ...) to int"""
@@ -27,3 +27,30 @@ def parse_bytes(value, default = 0, suffixes = "bkmgtp"):
         
     except ValueError:
         return default
+
+
+
+def parse_datetime(date_string, format="%Y-%m-%dT%H:%M:%S%z", utcoffset=0):
+    """Create a datetime object by parsing 'date_string'"""
+    try:
+        if format.endswith("%z") and date_string[-3] == ":":
+            # workaround for Python < 3.7: +00:00 -> +0000
+            ds = date_string[:-3] + date_string[-2:]
+        else:
+            ds = date_string
+        d = datetime.datetime.strptime(ds, format)
+        o = d.utcoffset()
+        if o is not None:
+            # convert to naive UTC
+            d = d.replace(tzinfo=None, microsecond=0) - o
+        else:
+            if d.microsecond:
+                d = d.replace(microsecond=0)
+            if utcoffset:
+                # apply manual UTC offset
+                d += datetime.timedelta(0, utcoffset * -3600)
+        return d
+    except (TypeError, IndexError, KeyError):
+        return None
+    except (ValueError, OverflowError):
+        return date_string

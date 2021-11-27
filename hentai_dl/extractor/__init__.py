@@ -12,7 +12,8 @@ modules = [
     "nhentai_to",
     "nhentai_io",
     "doujins_com",
-    "fevian"
+    "fevian",
+    "tsumino"
 ]
 
 
