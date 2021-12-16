@@ -5,6 +5,24 @@
 # published by the Free Software Foundation.
 
 import datetime
+import json 
+from . import util 
+
+def write_json(path, data, indent = 3):
+    
+    if not util.create_directory_from_file_name(path):
+        return
+
+    try:
+        with open(path, "w") as writer:
+            json.dump(data, writer, indent=indent)
+
+    except:
+        pass 
+
+def parse_range(input):
+    pass 
+
 
 def parse_bytes(value, default = 0, suffixes = "bkmgtp"):
     """Convert a bytes-amount ("500k", "2.5M", ...) to int"""

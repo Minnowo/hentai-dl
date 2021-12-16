@@ -172,23 +172,6 @@ def build_parser():
         help=("Print a list of extractor classes "
               "with description, (sub)category and example URL"),
     )
-    output.add_argument(
-        "--write-log",
-        dest="logfile", metavar="FILE", action=ConfigAction,
-        help="Write logging output to FILE",
-    )
-    output.add_argument(
-        "--write-unsupported",
-        dest="unsupportedfile", metavar="FILE", action=ConfigAction,
-        help=("Write URLs, which get emitted by other extractors but cannot "
-              "be handled, to FILE"),
-    )
-    output.add_argument(
-        "--write-pages",
-        dest="write-pages", nargs=0, action=ConfigConstAction, const=True,
-        help=("Write downloaded intermediary pages to files "
-              "in the current directory to debug problems"),
-    )
 
     downloader = parser.add_argument_group("Downloader Options")
     downloader.add_argument(
@@ -216,11 +199,6 @@ def build_parser():
         "--http-timeout",
         dest="timeout", metavar="SECONDS", type=float, action=ConfigAction,
         help="Timeout for HTTP connections (default: 30.0)",
-    )
-    downloader.add_argument(
-        "--sleep",
-        dest="sleep", metavar="SECONDS", type=float, action=ConfigAction,
-        help="Number of seconds to sleep before each download",
     )
     downloader.add_argument(
         "--filesize-min",
@@ -378,22 +356,6 @@ def build_parser():
         dest="postprocessors",
         action="append_const", const="metadata",
         help="Write metadata to separate JSON files",
-    )
-    postprocessor.add_argument(
-        "--write-infojson",
-        dest="postprocessors",
-        action="append_const", const={
-            "name"    : "metadata",
-            "event"   : "init",
-            "filename": "info.json",
-        },
-        help="Write gallery metadata to a info.json file",
-    )
-    postprocessor.add_argument(
-        "--write-tags",
-        dest="postprocessors",
-        action="append_const", const={"name": "metadata", "mode": "tags"},
-        help="Write image tags to separate text files",
     )
     # postprocessor.add_argument(
     #     "--mtime-from-date",

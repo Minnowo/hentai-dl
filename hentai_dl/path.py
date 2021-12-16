@@ -57,7 +57,7 @@ class PathFormat:
         self.set_extension(extension)
 
     @staticmethod
-    def from_path(path : str):
+    def from_path(path : str, use_temp_path=True):
 
         # altsep is None on unix, need to check
         if os.altsep and os.altsep in path:
@@ -70,7 +70,7 @@ class PathFormat:
 
         directory, name = _[0], _[1]
 
-        pformat = PathFormat()
+        pformat = PathFormat(use_temp_path=use_temp_path)
         pformat.set_directory(directory, build_path=False)
         pformat.set_filename(name)
 

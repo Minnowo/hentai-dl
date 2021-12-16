@@ -47,7 +47,7 @@ class YoutubeDLDownloader(DownloaderBase):
             options["progress_hooks"] = (self._progress_hook,)
 
         if self.config("logging", True):
-            options["logger"] = self.log
+            options["logger"] = self.logger
         self.forward_cookies = self.config("forward-cookies", False)
 
         self.outtmpl = self.config("outtmpl")
@@ -121,7 +121,7 @@ class YoutubeDLDownloader(DownloaderBase):
         try:
             ytdl.process_info(info_dict)
         except Exception:
-            self.log.debug("Traceback", exc_info=True)
+            self.logger.debug("Traceback", exc_info=True)
             return False
         return True
 

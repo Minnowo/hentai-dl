@@ -23,6 +23,8 @@ from . import exceptions
 from . import output
 from .path import PathFormat
 from . import config
+from . import text
+from . import util
 
 class Job():
 
@@ -91,11 +93,18 @@ class DownloaderJob(Job):
 
         self.logger = self.get_logger("download")
         self.downloaders = {}
-        self.output_directory = config.get((), "output-directory", "hentai-dl") 
+        self.output_directory = config.get((), "output-directory", False) 
         self.download_directory = self.output_directory
         self.out = output.select("terminal")
         self.cancled = False
+        self.format_directory = False
 
+        if not self.output_directory:
+            self.format_directory = True 
+
+        self.no_dl = not config.get((),"download", True) 
+        self.skip = config.get((), "skip", True)
+        self.part_files = config.get((), "part", True)
 
     def run(self):
 
@@ -103,7 +112,7 @@ class DownloaderJob(Job):
         log = self.extractor.log
 
         try:
-            with ThreadPoolExecutor(max_workers=config.get((), "thread-count", 5)) as exec:
+            with ThreadPoolExecutor(max_workers=config.get((), "thread-count", 1)) as exec:
                 
                 results = []
                 for message in self.extractor:
@@ -118,6 +127,7 @@ class DownloaderJob(Job):
                     # this allows for the KeyboardInterrupt to takeplace
                     while(any([i.running() for i in results])):
                         sleep(1)
+
                 except KeyboardInterrupt:
                     print("keyboard interrupt")
 
@@ -148,10 +158,9 @@ class DownloaderJob(Job):
 
         except Exception as exc:
             log.error(("An unexpected error occurred: %s - %s. "
-                       "Please run gallery-dl again with the --verbose flag, "
+                       "Please run hentai-dl again with the --verbose flag, "
                        "copy its output and report this issue on "
-                       "https://github.com/mikf/gallery-dl/issues ."),
-                      exc.__class__.__name__, exc)
+                       "https://github.com/mikf/gallery-dl/issues ."), exc.__class__.__name__, exc)
             log.debug("", exc_info=True)
             status |= 1
 
@@ -169,30 +178,46 @@ class DownloaderJob(Job):
             return
 
         if not file_meta_dict:
-            print("not metadict will not download")
+            print("no metadict will not download")
             return
 
         name = file_meta_dict.get("filename")
         ext  = file_meta_dict.get("extension")
 
-        out_path = PathFormat()
+        out_path = PathFormat(use_temp_path = self.part_files)
         out_path.set_directory(self.download_directory, build_path=False)
         out_path.set_filename(name, build_path=False)
         out_path.set_extension(ext)
 
-        # print(out_path)
+        if self.skip and os.path.isfile(out_path.path):
+            self.logger.info(f"file already exists for {url}. skipping")
+            return
+
         return self.download(url, out_path)
 
 
     def handle_directory(self, directory):
         """Formats and creates the given directory"""
-        self.download_directory = os.path.join(self.output_directory,  self.extractor.category, directory['title'])
-        # print(directory)
-        # print(self.extractor.category)
+
+        if self.format_directory:
+            self.download_directory = os.path.join(self.output_directory,  self.extractor.category, directory['title'])
+
+        else:
+            self.download_directory = self.output_directory
+
+        if "metadata" in config.get((), "postprocessors", []):
+            text.write_json(
+                os.path.join(self.download_directory, config.get(("internal",), "metadata_filename")), 
+                directory
+                )
 
 
     def download(self, url : str, path):
         """Download the given url, save to the given path"""
+
+        if self.no_dl:
+            self.logger.info(f"downloading: {url}")
+            return True 
 
         downloader = self.get_downloader_from_url(url)
         
@@ -201,13 +226,16 @@ class DownloaderJob(Job):
             return False
 
         if isinstance(path, str):
-            path = PathFormat.from_path(path)
+            path = PathFormat.from_path(path, self.part_files)
 
         try:
+
             if downloader.download(url, path):
                 path.finalize()
                 return True 
+
             return False
+
         except OSError as ex:
             self.logger.warning("%s: %s", ex.__class__.__name__, ex)
             return False

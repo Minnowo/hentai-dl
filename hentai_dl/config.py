@@ -16,7 +16,11 @@ from . import util
 log = logging.getLogger("config")
 
 
-_config = {}
+_config = {
+    "internal" : {
+        "metadata_filename" : ".json",
+    }
+}
 
 if WINDOWS:
     _default_configs = [

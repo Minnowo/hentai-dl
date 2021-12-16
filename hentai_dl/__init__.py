@@ -62,7 +62,7 @@ def progress(urls, pformat):
     pinfo = {"total": len(urls)}
 
     for pinfo["current"], pinfo["url"] in enumerate(urls, 1):
-        print(pformat.format_map(pinfo), file=sys.stderr)
+        print("\n" + pformat.format_map(pinfo), file=sys.stderr)
         yield pinfo["url"]
 
 
@@ -90,10 +90,7 @@ def main():
     parser = option.build_parser()
     args = parser.parse_args()
     log = output.initialize_logging(args.loglevel)
-    # output.configure_logging(args.loglevel)
-    # print(**args)
-    # return
-    # log.warning("uwu")
+
     # configuration
     if args.load_config:
         config.load()
@@ -104,19 +101,14 @@ def main():
     if args.yamlfiles:
         config.load(args.yamlfiles, strict=True, fmt="yaml")
 
-    # if args.postprocessors:
-    #     config.set((), "postprocessors", args.postprocessors)
+    if args.postprocessors:
+        config.set((), "postprocessors", args.postprocessors)
 
-    # if args.abort:
-    #     config.set((), "skip", "abort:" + str(args.abort))
-
-    # if args.terminate:
-    #     config.set((), "skip", "terminate:" + str(args.terminate))
-    
 
     for opts in args.options:
         print(opts)
         config.set(*opts)
+
     # return
     # config.set(("runtime",), "threads", clamp(args.thread_count, 0, 32))
     # config.set(("runtime",), "use_api", args.use_api)
@@ -176,13 +168,3 @@ def main():
             log.error("No suitable extractor found for '%s'", url)
 
     return status
-    # with open("/mnt/d/Ωtmp/test.txt", "w+b") as f:
-    #     f.write("test")
-    # return
-    dl = DownloaderJob("https://nhentai.net/g/375952/1/")
-    # dl = DownloaderJob("https://doujins.com/hentai-magazine-chapters/haguruma-55114")
-    dl.run()
-    # dl.download("https://i.nhentai.net/galleries/2034672/1.png", "D:\\Ωtmp\\test.png") 
-
-    print(args.options)
-    print("all done")

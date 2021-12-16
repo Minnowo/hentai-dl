@@ -48,13 +48,13 @@ class HttpDownloader(DownloaderBase):
             self.min_file_size = util.parse_bytes(self.min_file_size)
 
             if not self.min_file_size:
-                self.log.warning("Invalid minimum file size (%r)", self.min_file_size)
+                self.logger.warning("Invalid minimum file size (%r)", self.min_file_size)
 
         if self.max_file_size:
             self.max_file_size = util.parse_bytes(self.max_file_size)
             
             if not self.max_file_size:
-                self.log.warning("Invalid maximum file size (%r)", self.max_file_size)
+                self.logger.warning("Invalid maximum file size (%r)", self.max_file_size)
             
         self.receive = self._receive
         if self.rate:
@@ -68,7 +68,7 @@ class HttpDownloader(DownloaderBase):
                 self.receive = self._receive_rate
 
             else:
-                self.log.warning("Invalid rate limit (%r)", self.rate)
+                self.logger.warning("Invalid rate limit (%r)", self.rate)
 
         # if self.progress is not None:
         #     self.receive = self._receive_rate
@@ -100,24 +100,28 @@ class HttpDownloader(DownloaderBase):
         tries = 0
         msg = ""
 
-        # kwdict = pathfmt.kwdict
-
         while True:
+
             if self.cancled:
+                
                 if response:
                     response.close()
                     response = None
+                
                 self.downloading = False
+
                 return False
+
             if tries:
                 if response:
                     response.close()
                     response = None
                     
-                self.log.warning("%s (%s/%s)", msg, tries, self.retries+1)
+                self.logger.warning("%s (%s/%s)", msg, tries, self.retries+1)
 
                 if tries > self.retries:
                     return False
+
                 time.sleep(tries)
 
             tries += 1
@@ -148,7 +152,7 @@ class HttpDownloader(DownloaderBase):
                 msg = str(exc)
                 continue
             except Exception as exc:
-                self.log.warning(exc)
+                self.logger.warning(exc)
                 return False
 
             # check response
@@ -170,13 +174,13 @@ class HttpDownloader(DownloaderBase):
                 if code == 429 or 500 <= code < 600:  # Server Error
                     continue
                 
-                self.log.warning(msg)
+                self.logger.warning(msg)
                 return False
 
             # check for invalid responses
             # validate = kwdict.get("_http_validate")
             # if validate and not validate(response):
-            #     self.log.warning("Invalid response")
+            #     self.logger.warning("Invalid response")
             #     return False
 
             # set missing filename extension from MIME type
@@ -191,11 +195,11 @@ class HttpDownloader(DownloaderBase):
 
             if size is not None:
                 if self.min_file_size and size < self.min_file_size:
-                    self.log.warning("File size smaller than allowed minimum (%s < %s)", size, self.min_file_size)
+                    self.logger.warning("File size smaller than allowed minimum (%s < %s)", size, self.min_file_size)
                     return False
 
                 if self.max_file_size and size > self.max_file_size:
-                    self.log.warning("File size larger than allowed maximum (%s > %s)", size, self.max_file_size)
+                    self.logger.warning("File size larger than allowed maximum (%s > %s)", size, self.max_file_size)
                     return False
 
             content = response.iter_content(self.chunk_size)
@@ -217,10 +221,10 @@ class HttpDownloader(DownloaderBase):
             if not offset:
                 mode = "w+b"
                 if file_size:
-                    self.log.debug("Unable to resume partial download")
+                    self.logger.debug("Unable to resume partial download")
             else:
                 mode = "r+b"
-                self.log.debug("Resuming download at byte %d", offset)
+                self.logger.debug("Resuming download at byte %d", offset)
 
             # download content
             self.downloading = True
@@ -235,7 +239,7 @@ class HttpDownloader(DownloaderBase):
                     fp.seek(offset)
 
                 # self.out.start(pathfmt.path)
-                print("downloading: {}, saving: {}".format(url, pathfmt.temp_path))
+                self.logger.info("downloading: {}".format(url))
 
                 try:
                     # print("recieve start")
@@ -308,7 +312,7 @@ class HttpDownloader(DownloaderBase):
         if ext:
             return ext[1:]
 
-        self.log.warning("Unknown MIME type '%s'", mtype)
+        self.logger.warning("Unknown MIME type '%s'", mtype)
         return "bin"
 
 

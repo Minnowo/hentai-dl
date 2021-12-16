@@ -17,7 +17,7 @@ class DownloaderBase():
         self.out = job.out
         self.session = job.extractor.session
         
-        self.log = job.get_logger("downloader." + self.scheme)
+        self.logger = job.get_logger("downloader." + self.scheme)
 
 
     def config(self, key, default=None):

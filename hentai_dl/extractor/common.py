@@ -542,13 +542,22 @@ class GalleryExtractor(Extractor):
         # compute the z_fill once even if its not used
         z_fill = len(str(data["count"]))
 
+        im_range = config.get((), "image-range")
+
+        if im_range:
+            im_range = util.RangePredicate(im_range)
+
+        else:
+            im_range = lambda : True 
+
         for i, (url, imgdata) in images:
             util.add_nameext_from_url(url, imgdata)
             
             if self.iter_names:
                 imgdata["filename"] = "{}".format(i).zfill(z_fill)
 
-            yield Message.Url, url, imgdata
+            if im_range():
+                yield Message.Url, url, imgdata
 
     def login(self):
         """Login and set necessary cookies"""
