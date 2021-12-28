@@ -95,6 +95,11 @@ def build_parser():
         help="Destination directory",
     )
     general.add_argument(
+        "-f", "--format",
+        dest="output-name-format", metavar="DEST", action=ConfigAction,
+        help="The folder name to output items",
+    )
+    general.add_argument(
         "-i", "--input-file",
         dest="inputfiles", metavar="FILE", action="append",
         help=("Download URLs found in FILE ('-' for stdin). "

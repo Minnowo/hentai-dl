@@ -7,9 +7,9 @@
 """Extractors for https://nhentai.net/"""
 
 from bs4 import BeautifulSoup
-from re import search
+from re import search, match
 
-from .common import GalleryExtractor
+from .common import Extractor, GalleryExtractor, Message
 from .. import util
 import collections
 import json
@@ -167,6 +167,62 @@ class NhentaiGalleryExtractor(NhentaiBase, GalleryExtractor):
             images.append((image_url, {"w" : -1, "h" : -1, "extension" : ext}))
 
         return images
+
+
+class NhentaiGroupExtractor(NhentaiBase, Extractor):
+    """Extractor for groups"""
+
+    pattern = r"(?:https?://)?nhentai\.net/group/([^\/]+/)"
+
+    
+    def __init__(self, match, use_api = False):
+
+        print(match.group(1))
+        url = self.root + "/group/" + match.group(1) + "?page={PAGE}"
+        
+        self.use_api = use_api
+        GalleryExtractor.__init__(self, match, url)
+
+        self.url = url 
+
+        self.iter_names = True
+
+    def items(self):
+        
+        page = 1
+        gallery_urls = set()
+
+        while True:
+            url = self.url.format(PAGE=str(page))
+
+            print("fetching: " + url)
+
+            response = self.request(url, fatal=False)
+
+            soup = BeautifulSoup(response.content, "html.parser")
+
+            content = soup.find("div", attrs={"id" : "content"})
+            container = content.find("div", attrs={"class" : "container index-container"})
+
+            h3 = container.find("h3")
+
+            if h3:
+                if h3.text == "No results, sorry.":
+                    break 
+
+            for div in container.find_all("div", attrs={"class" : "gallery"}):
+
+                if div.a:
+                    g_url = self.root + div.a["href"]
+                    gallery_urls.add(match(NhentaiGalleryExtractor.pattern, g_url))
+            
+            page += 1
+
+        for i in gallery_urls:
+
+            if i:
+
+                yield Message.Queue, NhentaiGalleryExtractor(i, self.use_api)
 
 
 # class NhentaiSearchExtractor(NhentaiBase, Extractor):

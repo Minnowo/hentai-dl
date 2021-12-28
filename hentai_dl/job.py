@@ -98,9 +98,11 @@ class DownloaderJob(Job):
         self.out = output.select("terminal")
         self.cancled = False
         self.format_directory = False
+        self.handling_queue = False 
 
-        if not self.output_directory:
+        if not isinstance(self.output_directory, str):
             self.format_directory = True 
+            self.output_directory = "hentai-dl"
 
         self.no_dl = not config.get((),"download", True) 
         self.skip = config.get((), "skip", True)
@@ -117,11 +119,52 @@ class DownloaderJob(Job):
                 results = []
                 for message in self.extractor:
                     
+                    # to correct the output directory if anything is specified
+                    self.handling_queue = message[0] == Message.Queue
+
                     if message[0] == Message.Url:
                         results.append(exec.submit(self.handle_url, message[1], message[2]))
 
                     elif message[0] == Message.Directory:
                         self.handle_directory(message[1])
+
+                    # this if statement is kinda dumb but it works so whatever
+                    elif message[0] == Message.Queue:
+
+                        for _message in message[1]:
+                            if _message[0] == Message.Url:
+                                results.append(exec.submit(self.handle_url, _message[1], _message[2]))
+
+                            elif _message[0] == Message.Directory:
+                                self.handle_directory(_message[1])
+
+                            else:
+                                # cause this is using iteration instead of recursion to handle queue
+                                # not gonna make it support a queue of a queue unless i change this to a recursive function
+                                # this shouldn't ever trigger unless i add an extractor that does this tho
+                                raise Exception("Does not support recursive downloading of galleries, someone has added a Queue extractor class which returns Queues")
+
+                        try:
+                            
+                            # need to block all threads here to prevent a Message.Directory
+                            # from changing the download path to a different place while files are still downloading
+                            # for the specific gallery 
+                            while(any([i.running() for i in results])):
+                                sleep(1)
+
+                            while(any([not i.done() for i in results])):
+                                sleep(1)
+
+                        except KeyboardInterrupt:
+                            print("keyboard interrupt")
+
+                            self.cancled = True
+                            # cancel all downloaders that might be running
+                            # this quickly ends the threads allowing them to properly join
+                            for scheme, dl in self.downloaders.items():
+                                dl.cancel()
+
+                            raise  
                 try:
                     # something to block the main thread to avoid thread.join
                     # this allows for the KeyboardInterrupt to takeplace
@@ -202,14 +245,20 @@ class DownloaderJob(Job):
         if self.format_directory:
             self.download_directory = os.path.join(self.output_directory,  self.extractor.category, directory['title'])
 
+        elif self.handling_queue:
+            self.download_directory = os.path.join(self.output_directory, directory['title'])
+        
         else:
             self.download_directory = self.output_directory
 
+        self.logger.info(f"output directory: {self.download_directory}")
+
         if "metadata" in config.get((), "postprocessors", []):
-            text.write_json(
-                os.path.join(self.download_directory, config.get(("internal",), "metadata_filename")), 
-                directory
-                )
+            meta = os.path.join(self.download_directory, config.get(("internal",), "metadata_filename"))
+            
+            self.logger.info(f"writing metadata: {meta}")
+
+            text.write_json(meta, directory)
 
 
     def download(self, url : str, path):
