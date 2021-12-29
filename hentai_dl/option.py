@@ -97,7 +97,7 @@ def build_parser():
     general.add_argument(
         "-f", "--format",
         dest="output-name-format", metavar="DEST", action=ConfigAction,
-        help="The folder name to output items",
+        help="The folder name to output items. Supports variable subbing using $['key'], where 'key' is the key in the metadata, shortforms include: i -> gallery_id, mi -> media_id, t -> title, te -> title_en, tj -> title_ja, a -> artist, d -> date, l -> language",
     )
     general.add_argument(
         "-i", "--input-file",

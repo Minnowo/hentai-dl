@@ -169,16 +169,13 @@ class NhentaiGalleryExtractor(NhentaiBase, GalleryExtractor):
         return images
 
 
-class NhentaiGroupExtractor(NhentaiBase, Extractor):
-    """Extractor for groups"""
+class NhentaiGalleryGalleryExtractorBase(NhentaiBase, GalleryExtractor):
 
-    pattern = r"(?:https?://)?nhentai\.net/group/([^\/]+/)"
+    sub = ""
 
-    
     def __init__(self, match, use_api = False):
 
-        print(match.group(1))
-        url = self.root + "/group/" + match.group(1) + "?page={PAGE}"
+        url = self.root + self.sub + match.group(1) + "?page={PAGE}"
         
         self.use_api = use_api
         GalleryExtractor.__init__(self, match, url)
@@ -195,8 +192,6 @@ class NhentaiGroupExtractor(NhentaiBase, Extractor):
         while True:
             url = self.url.format(PAGE=str(page))
 
-            print("fetching: " + url)
-
             response = self.request(url, fatal=False)
 
             soup = BeautifulSoup(response.content, "html.parser")
@@ -208,7 +203,10 @@ class NhentaiGroupExtractor(NhentaiBase, Extractor):
 
             if h3:
                 if h3.text == "No results, sorry.":
+                    self.log.info(f"no more pages found. {page} total pages found.")
                     break 
+
+            self.log.info("extracting page: " + url)
 
             for div in container.find_all("div", attrs={"class" : "gallery"}):
 
@@ -224,6 +222,36 @@ class NhentaiGroupExtractor(NhentaiBase, Extractor):
 
                 yield Message.Queue, NhentaiGalleryExtractor(i, self.use_api)
 
+
+class NhentaiGroupExtractor(NhentaiGalleryGalleryExtractorBase):
+    """Extractor for groups (downloads EVERY gallery under the group)"""
+
+    pattern = r"(?:https?://)?nhentai\.net/group/([^\/]+/)"
+    sub = "/group/"
+
+class NhentaiArtistExtractor(NhentaiGalleryGalleryExtractorBase):
+    """Extractor for artists (downloads EVERY gallery under the artist)"""
+
+    pattern = r"(?:https?://)?nhentai\.net/artist/([^\/]+/)"
+    sub = "/artist/"
+
+class NhentaiTagExtractor(NhentaiGalleryGalleryExtractorBase):
+    """Extractor for tags (downloads EVERY gallery under the tag)"""
+    
+    pattern = r"(?:https?://)?nhentai\.net/tag/([^\/]+/)"
+    sub = "/tag/"
+
+class NhentaiCharacterExtractor(NhentaiGalleryGalleryExtractorBase):
+    """Extractor for characters (downloads EVERY gallery under the character)"""
+    
+    pattern = r"(?:https?://)?nhentai\.net/character/([^\/]+/)"
+    sub = "/character/"
+
+class NhentaiCharacterExtractor(NhentaiGalleryGalleryExtractorBase):
+    """Extractor for parody (downloads EVERY gallery under the parody)"""
+    
+    pattern = r"(?:https?://)?nhentai\.net/parody/([^\/]+/)"
+    sub = "/parody/"
 
 # class NhentaiSearchExtractor(NhentaiBase, Extractor):
 #     """Extractor for nhentai search results"""

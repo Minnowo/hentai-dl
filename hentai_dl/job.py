@@ -242,14 +242,36 @@ class DownloaderJob(Job):
     def handle_directory(self, directory):
         """Formats and creates the given directory"""
 
-        if self.format_directory:
-            self.download_directory = os.path.join(self.output_directory,  self.extractor.category, directory['title'])
+        output_name_format = config.get((), "output-name-format", None)
 
+        # if not name format is specified, default to the gallery title
+        if output_name_format is None:
+            output_name_format = directory.get("title", None)
+
+            # if there is somehow no 'title' key in the given dict, 
+            # generate a random number and just use hex cause why not
+            if output_name_format is None:
+                import random 
+                output_name_format = hex(str(random.randint(1000, 10000))).upper()
+
+        else:
+            output_name_format = text.NameFormatter(output_name_format, directory).get_formatted_name()
+
+        if self.format_directory:
+            self.download_directory = os.path.join(self.output_directory,  self.extractor.category, output_name_format)
+
+        # cuase i haven't added the format command or whatever that makes a directory in the output directory formated per gallery
+        # so use the gallery title to prevent duplicates even tho it might cause them anyway 
         elif self.handling_queue:
-            self.download_directory = os.path.join(self.output_directory, directory['title'])
+            self.download_directory = os.path.join(self.output_directory, output_name_format)
         
         else:
-            self.download_directory = self.output_directory
+            # if the user specified a name format apply it, otherwise don't add the directory['title'] to the output
+            if isinstance(config.get((), "output-name-format", False), str):
+                self.download_directory = os.path.join(self.output_directory, output_name_format)
+                
+            else:
+                self.download_directory = self.output_directory
 
         self.logger.info(f"output directory: {self.download_directory}")
 

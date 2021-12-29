@@ -6,6 +6,7 @@
 
 import datetime
 import json 
+import re
 from . import util 
 
 def write_json(path, data, indent = 3):
@@ -72,3 +73,54 @@ def parse_datetime(date_string, format="%Y-%m-%dT%H:%M:%S%z", utcoffset=0):
         return None
     except (ValueError, OverflowError):
         return date_string
+
+
+
+class NameFormatter():
+    """Formats the given string with the given dict key values"""
+
+    EASE_OF_LIFE_MAP = {
+        "i" : "gallery_id",
+        "mi" : "media_id",
+        "t" : "title",
+        "te" : "title_en",
+        "tj" : "title_ja",
+        "a" : "artist",
+        "d" : "date",
+        "l" : "language"
+    }
+
+    MATCH_SUB = re.compile(r"\$\[([a-zA-Z]+)\]")
+
+    def __init__(self, string, dict) -> None:
+        
+        self.og_string = string 
+        self.dict = dict 
+
+    
+    def get_formatted_name(self):
+
+        # find all matches of $['some text']
+        keys = [i.strip() for i in self.MATCH_SUB.findall(self.og_string) if i]
+
+        new_string = self.og_string
+
+        for i in keys:
+            
+            # check if any of the matches are in the EASE_OF_LIFE_MAP dict and then index the given dict
+            value = self.dict.get(self.EASE_OF_LIFE_MAP.get(i, i), None)
+
+            # combine lists using -
+            if hasattr(value, '__iter__'):
+                value = "-".join(list(value))
+
+            # just remove the match if nothing is found 
+            if value is None:
+                new_string = self.MATCH_SUB.sub("", new_string, 1)
+                continue 
+            
+            # else just sub it with the value found in the dict 
+            new_string = self.MATCH_SUB.sub(str(value), new_string, 1)
+
+        return new_string
+
