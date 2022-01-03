@@ -13,6 +13,7 @@ modules = [
     "nhentai_io",
     "doujins_com",
     "fevian",
+    "nyahentai2",
     "tsumino"
 ]
 

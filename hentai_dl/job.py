@@ -252,7 +252,7 @@ class DownloaderJob(Job):
             # generate a random number and just use hex cause why not
             if output_name_format is None:
                 import random 
-                output_name_format = hex(str(random.randint(1000, 10000))).upper()
+                output_name_format = str(hex(str(random.randint(1000, 10000)))).upper()
 
         else:
             output_name_format = text.NameFormatter(output_name_format, directory).get_formatted_name()
