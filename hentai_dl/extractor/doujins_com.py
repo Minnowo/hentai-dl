@@ -55,24 +55,24 @@ class DoujinsDotComGalleryExtractor(GalleryExtractor):
         
         tag_area = html.find('li', attrs={'class' : 'tag-area'})
         if tag_area:
-            data['tags'] = ", ".join([i.text.strip() for i in tag_area.find_all('a') if i])
+            data['tags'] = [i.text.strip() for i in tag_area.find_all('a') if i]
 
         else:
-            data['tags'] = ""
+            data['tags'] = []
 
         artists = html.find('div', attrs={'class' : 'gallery-artist'})
         if artists:
-            data['artists'] = ", ".join([i.text.strip() for i in artists.find_all('a') if i])
+            data['artists'] = [i.text.strip() for i in artists.find_all('a') if i]
 
         else:
-            data['artists'] = ""
+            data['artists'] = []
 
         message_area = html.find_all('div', attrs={'class':'folder-message'})
         if message_area:
-            data['message'] = ", ".join([i.text.strip() for i in message_area if i])
+            data['message'] = [i.text.strip() for i in message_area if i]
 
         else:
-            data['message'] = ""
+            data['message'] = []
 
         self.data = data 
         return data

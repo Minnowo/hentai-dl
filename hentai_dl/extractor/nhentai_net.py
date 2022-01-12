@@ -11,6 +11,7 @@ from re import search, match
 
 from .common import Extractor, GalleryExtractor, Message
 from .. import util
+from .. import text
 import collections
 import json
 
@@ -59,12 +60,6 @@ class NhentaiGalleryExtractor(NhentaiBase, GalleryExtractor):
         for tag in data["tags"]:
             info[tag["type"]].append(tag["name"])
 
-        language = ""
-        for language in info["language"]:
-            if language != "translated":
-                language = language.capitalize()
-                break
-
         return {
             "title"     : title_en or title_ja,
             "title_en"  : title_en,
@@ -73,14 +68,14 @@ class NhentaiGalleryExtractor(NhentaiBase, GalleryExtractor):
             "media_id"  : util.parse_int(data["media_id"]),
             "date"      : data["upload_date"],
             "scanlator" : data["scanlator"],
-            "artist"    : info["artist"],
-            "group"     : info["group"],
-            "parody"    : info["parody"],
+            "artists"   : info["artist"],
+            "groups"    : info["group"],
+            "parodies"  : info["parody"],
             "characters": info["character"],
             "tags"      : info["tag"],
             "type"      : info["category"][0] if info["category"] else "",
-            "lang"      : util.language_to_code(language),
-            "language"  : language,
+            "lang"      : [util.language_to_code(i) for i in info["language"]],
+            "languages" : [i.capitalize() for i in info["language"]],
         } 
 
     def metadata_scrape(self, page):
@@ -111,12 +106,11 @@ class NhentaiGalleryExtractor(NhentaiBase, GalleryExtractor):
             field_name = field.contents[0].strip().strip(':')
 
             if field_name in needed_fields:
-                dat = [s.find('span', attrs={'class': 'name'}).contents[0].strip() for s in field.find_all('a', attrs={'class': 'tag'})]
-                data[field_name.lower()] = ', '.join(dat)
+                data[field_name.lower()] = [s.find('span', attrs={'class': 'name'}).contents[0].strip() for s in field.find_all('a', attrs={'class': 'tag'})]
 
         time_field = info_div.find('time')
         if time_field.has_attr('datetime'):
-            data['uploaded'] = time_field['datetime']
+            data['date'] = time_field['datetime']
 
         self.data = data 
         return data

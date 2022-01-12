@@ -85,9 +85,9 @@ class NameFormatter():
         "t" : "title",
         "te" : "title_en",
         "tj" : "title_ja",
-        "a" : "artist",
+        "a" : "artists",
         "d" : "date",
-        "l" : "language"
+        "l" : "languages"
     }
 
     MATCH_SUB = re.compile(r"\$\[([a-zA-Z]+)\]")
