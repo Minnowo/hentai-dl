@@ -152,7 +152,7 @@ class NhentaiGalleryExtractor(NhentaiBase, GalleryExtractor):
         html = BeautifulSoup(page, 'html.parser')
 
         doujinshi_cover = html.find('div', attrs={'id': 'cover'})
-        img_id = search('/galleries/([0-9]+)/cover.(jpg|png|gif)$',doujinshi_cover.a.img.attrs['src']).group(1)
+        img_id = search('/galleries/([0-9]+)/cover.(jpg|png|gif)', str(doujinshi_cover.a.img)).group(1)
 
         index = 0
         for i in html.find_all('div', attrs={'class': 'thumb-container'}):

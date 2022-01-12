@@ -32,12 +32,12 @@ with open('requirements.txt') as f:
 # get version without importing the package
 VERSION = re.search(
     r'__version__\s*=\s*"([^"]+)"',
-    read("hentai_dl/version.py"),
+    read("hentai_dl/meta.py"),
 ).group(1)
 
 
 DESCRIPTION = ("Command-line program to download nhentai galleries")
-LONG_DESCRIPTION = read("README.rst")
+# LONG_DESCRIPTION = read("README.rst")
 
 
 
@@ -45,7 +45,7 @@ setup(
     name="hentai_dl",
     version=VERSION,
     description=DESCRIPTION,
-    long_description=LONG_DESCRIPTION,
+    # long_description=LONG_DESCRIPTION,
     url="https://github.com/Minnowo/hentai-dl",
     download_url="https://github.com/Minnowo/hentai-dl",
     author="Alice Nyaa",

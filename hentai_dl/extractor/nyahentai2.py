@@ -4,7 +4,7 @@
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
 
-"""Extractors for https://nhentai.net/"""
+"""Extractors for https://nyahentai2.net/"""
 
 from bs4 import BeautifulSoup
 from re import search, match
